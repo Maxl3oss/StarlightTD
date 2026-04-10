@@ -4,7 +4,7 @@ local Fusion = require(RS.Packages.Fusion)
 local Scoped = Fusion.scoped
 local Children = Fusion.Children
 
-type UsedAs<T> = Fusion.UsedAs
+type UsedAs<T> = Fusion.Value<T> | Fusion.Computed<T>
 
 local function formatNumber(n: number)
 	local formatted = tostring(math.floor(tonumber(n) or 0))
@@ -19,7 +19,7 @@ local function formatNumber(n: number)
 end
 
 return function(props: {
-	Money: UsedAs<number>,
+	Coins: UsedAs<number>,
 	Parent: Instance?,
 })
 	local scope = Scoped({
@@ -27,30 +27,27 @@ return function(props: {
 		Computed = Fusion.Computed,
 	})
 
-	local moneyText = scope:Computed(function(use)
-		local currentMoney = use(props.Money) or 0
-		return "💰 $" .. formatNumber(currentMoney)
+	local coinText = scope:Computed(function(use)
+		return "🟡 " .. formatNumber(use(props.Coins))
 	end)
 
 	local component = scope:New("TextLabel")({
-		Text = moneyText,
-		TextScaled = true,
-		BackgroundTransparency = 1,
-		TextColor3 = Color3.fromRGB(241, 196, 15), -- Gold color
-		TextXAlignment = Enum.TextXAlignment.Left,
-		Parent = props.Parent,
-		Font = Enum.Font.FredokaOne,
-
+		Name = "CoinsDisplay",
 		Size = UDim2.fromOffset(250, 50),
 		Position = UDim2.new(0, 20, 1, -20),
 		AnchorPoint = Vector2.new(0, 1),
+		BackgroundTransparency = 1,
+		Text = coinText,
+		TextColor3 = Color3.fromRGB(241, 196, 15), -- Gold
+		Font = Enum.Font.FredokaOne,
+		TextSize = 32,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextScaled = true,
+		Parent = props.Parent,
 
 		[Children] = {
-			scope:New("UIStroke")({
-				Color = Color3.fromRGB(0, 0, 0),
-				Thickness = 2.5,
-			}),
-		},
+			scope:New("UIStroke")({ Thickness = 2.5, Color = Color3.fromRGB(0, 0, 0) }),
+		}
 	})
 
 	return component
