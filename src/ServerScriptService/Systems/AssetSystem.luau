@@ -21,7 +21,6 @@ function AssetSystem:Init()
 		for _, tower in ipairs(sourceTowers:GetChildren()) do
 			local clone = tower:Clone()
 			clone.Parent = towers
-			print(`[AssetSystem] Replicated tower model: {tower.Name}`)
 		end
 	end
 end

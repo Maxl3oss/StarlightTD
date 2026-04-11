@@ -19,13 +19,6 @@ local frameworkServer = {
 frameworkServer.__index = frameworkServer
 
 -- Debugging
-local DEBUG = false
-local function print(msg: string)
-	if DEBUG then
-		warn(`[Framework Server]: {msg}`)
-	end
-end
-
 function frameworkServer:Init()
 	if self.flags.init then
 		print("Already initialized")
@@ -38,7 +31,7 @@ function frameworkServer:Init()
 	-- Init Systems
 	for name, system in pairs(self.systems) do
 		if system.Init then
-			print("Initializing :", name)
+			warn("[Framework Server]: Initializing :", name)
 			system:Init(self)
 		end
 	end
@@ -46,7 +39,7 @@ function frameworkServer:Init()
 	-- Start Systems
 	for name, system in pairs(self.systems) do
 		if system.Start then
-			print("Starting     :", name)
+			warn("[Framework Server]: Starting     :", name)
 			system:Start(self)
 		end
 	end

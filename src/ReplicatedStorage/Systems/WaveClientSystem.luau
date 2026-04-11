@@ -18,12 +18,14 @@ function WaveClientSystem:Init()
 	if not mainUI then
 		mainUI = Instance.new("ScreenGui")
 		mainUI.Name = "MainUI"
-		mainUI.ResetOnSpawn = false
 		mainUI.Parent = playerGui
 	end
+	mainUI.ResetOnSpawn = false
 
 	-- State management using Fusion
-	local scope = Fusion.scoped({ Value = Fusion.Value })
+	self.scope = Fusion.scoped({ Value = Fusion.Value })
+	local scope = self.scope
+
 	self.waveState = scope:Value(0)
 	self.isRunningState = scope:Value(false)
 	self.countdownState = scope:Value(0)

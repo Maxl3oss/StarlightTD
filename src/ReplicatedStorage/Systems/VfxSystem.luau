@@ -5,8 +5,7 @@ local RS = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local Network = require(RS.Network)
 
-function VfxSystem:Init()
-end
+function VfxSystem:Init() end
 
 function VfxSystem:Start()
 	Network.TowerShoot.listen(function(data)
