@@ -104,7 +104,17 @@ function HealthBarSystem:CreateBillboardHP(
 	billboard.Size = UDim2.fromOffset(60 * scaleMultiplier, 25 * scaleMultiplier)
 	billboard.StudsOffset = Vector3.new(0, heightOffset, 0)
 	billboard.AlwaysOnTop = true
-	billboard.MaxDistance = 150
+
+	-- Visibility distance logic
+	local isBoss = displayName and string.find(string.lower(displayName), "boss")
+	local isCore = name == "CoreHP"
+
+	if isBoss or isCore then
+		billboard.MaxDistance = 250
+	else
+		billboard.MaxDistance = 40
+	end
+
 	billboard.Parent = part
 
 	-- Main Container (HP Bar)

@@ -1,5 +1,5 @@
 -- GameConfig.luau
--- Shared config accessible by both Client and Server
+-- Server-only config for sensitive game parameters
 
 local GameConfig = {
 	-- UI

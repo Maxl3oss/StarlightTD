@@ -8,10 +8,10 @@ local Network = require(RS.Network)
 
 local ProfileStore = require(SS.Packages.ProfileStore)
 local Players = game:GetService("Players")
-local PlayerStore = ProfileStore.New("PlayerStore", require(SS.Data.ProfileTemplate))
+local PlayerProfileStore = ProfileStore.New("PlayerStore", require(SS.Configs.ProfileConfig))
 
 -- config
-local Profiles: { [Player]: typeof(PlayerStore:StartSessionAsync()) } = {}
+local Profiles: { [Player]: typeof(PlayerProfileStore:StartSessionAsync()) } = {}
 
 -- Debugging
 local DEBUG = false
@@ -57,7 +57,7 @@ function ProfileStoreSystem:GetData(player: Player)
 end
 
 function ProfileStoreSystem:PlayerAdded(player: Player)
-	local profile = PlayerStore:StartSessionAsync(`{player.UserId}`, {
+	local profile = PlayerProfileStore:StartSessionAsync(`{player.UserId}`, {
 		Cancel = function()
 			return player.Parent ~= Players
 		end,

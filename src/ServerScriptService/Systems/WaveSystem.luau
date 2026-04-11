@@ -27,9 +27,9 @@ local Base = Workspace:WaitForChild("Base")
 local Players = game:GetService("Players")
 
 -- Modules
-local WaveConfig = require(RS.Configs.WaveConfig)
-local EnemyConfig = require(RS.Configs.EnemyConfig)
-local GameConfig = require(RS.Configs.GameConfig)
+local WaveConfig = require(SS.Configs.WaveConfig)
+local EnemyConfig = require(SS.Configs.EnemyConfig)
+local GameConfig = require(SS.Configs.GameConfig)
 local Network = require(RS.Network)
 local ProfileStoreSystem = require(SS.Systems.ProfileStoreSystem)
 

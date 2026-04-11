@@ -2,14 +2,12 @@ local mob = script.Parent
 local humanoid: Humanoid = mob:WaitForChild("Humanoid")
 local root: BasePart = mob:WaitForChild("HumanoidRootPart")
 
--- CONFIG
 local JUMP_INTERVAL = 0.3
 local JUMP_POWER = 30
 
 humanoid.UseJumpPower = true
 humanoid.JumpPower = JUMP_POWER
 
---  สำคัญ
 root.Anchored = false
 root:SetNetworkOwner(nil)
 
