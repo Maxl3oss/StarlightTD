@@ -1,17 +1,32 @@
---local mob = script.Parent
---local humanoid = mob.Humanoid
+local mob = script.Parent
+local humanoid: Humanoid = mob:WaitForChild("Humanoid")
+local root: BasePart = mob:WaitForChild("HumanoidRootPart")
 
---local walkAnim = script.Animation
---local walkAnimTrack = humanoid.Animator:LoadAnimation(walkAnim)
+-- CONFIG
+local JUMP_INTERVAL = 0.3
+local JUMP_POWER = 30
 
---humanoid.Running:Connect(function(speed)
---	if speed > 0 then
---		if not walkAnimTrack.IsPlaying then
---			walkAnimTrack:Play()
---		end
---	else
---		if walkAnimTrack.IsPlaying then
---			walkAnimTrack:Stop()
---		end
---	end
---end)
+humanoid.UseJumpPower = true
+humanoid.JumpPower = JUMP_POWER
+
+--  สำคัญ
+root.Anchored = false
+root:SetNetworkOwner(nil)
+
+local function isMoving()
+	return root.AssemblyLinearVelocity.Magnitude > 1
+end
+
+local function canJump()
+	return humanoid.FloorMaterial ~= Enum.Material.Air
+end
+
+task.spawn(function()
+	while humanoid and humanoid.Parent and humanoid.Health > 0 do
+		if isMoving() and canJump() then
+			humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+		end
+
+		task.wait(JUMP_INTERVAL)
+	end
+end)

@@ -65,11 +65,8 @@ function HealthBarSystem:SetupMobHealthBar(mob: Model)
 end
 
 function HealthBarSystem:SetupCoreHealthBar(towerCore: Instance)
-	-- The server broadcasts health via Network.UpdateBaseHealth
-	-- But since the Humanoid might not exist on TowerCore, we listen to the network
 	local Network = require(RS.Network)
 
-	-- Find initial values
 	local health = 100
 	local maxHealth = 100
 
@@ -97,7 +94,7 @@ function HealthBarSystem:CreateBillboardHP(
 	local heightOffset = 3.5
 	if adornee:IsA("Model") then
 		local extents = adornee:GetExtentsSize()
-		scaleMultiplier = math.clamp(extents.X / 4, 0.8, 2.5)
+		scaleMultiplier = math.clamp(extents.X / 3.5, 1.1, 2.2)
 		heightOffset = extents.Y + 1.5
 	end
 
@@ -177,13 +174,15 @@ function HealthBarSystem:CreateBillboardHP(
 		local nameLabel = Instance.new("TextLabel")
 		nameLabel.Name = "NameLabel"
 		nameLabel.Size = UDim2.new(1, 0, 0, 12)
-		nameLabel.Position = UDim2.new(0.5, 0, 0, 0)
-		nameLabel.AnchorPoint = Vector2.new(0.5, 0)
+		-- Increased gap to -6 and changed AnchorPoint to 1 to stay above
+		nameLabel.Position = UDim2.new(0.5, 0, 0.7, -6)
+		nameLabel.AnchorPoint = Vector2.new(0.5, 1)
 		nameLabel.BackgroundTransparency = 1
 		nameLabel.Text = displayName
 		nameLabel.TextColor3 = Color3.new(1, 1, 1)
 		nameLabel.Font = Enum.Font.FredokaOne
-		nameLabel.TextSize = 10
+		-- More subtle text scaling: min ~13, max ~16
+		nameLabel.TextSize = 11 + (2 * scaleMultiplier)
 		nameLabel.TextStrokeTransparency = 0.5
 		nameLabel.Parent = billboard
 	end

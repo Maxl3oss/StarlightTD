@@ -1,6 +1,23 @@
 local WaveSystem = {}
 WaveSystem.__index = WaveSystem
 
+export type WaveSystem = {
+	waypointsFolder: Folder,
+	mobsFolder: Folder,
+	towerCore: Instance?,
+	currentWave: number,
+	isWaveRunning: boolean,
+	isWaveSpawning: boolean,
+	enemiesInWave: number,
+	totalWaves: number,
+	countdown: number,
+	isGameOver: boolean,
+	baseMaxHealth: number,
+	baseHealth: number,
+	coins: number,
+	cachedWaypoints: { BasePart }?,
+}
+
 -- Services
 local RS = game:GetService("ReplicatedStorage")
 local SS = game:GetService("ServerScriptService")
@@ -18,12 +35,24 @@ local ProfileStoreSystem = require(SS.Systems.ProfileStoreSystem)
 
 -- Constants
 local COUNTDOWN_DURATION = 10
+local ARRIVE_THRESHOLD = 3
+local CLOSE_ENOUGH = 6
+local TIMEOUT = 6
+local RETRY_LIMIT = 2
 
 -- Debugging
-local DEBUG = true
-local function log(msg: string)
-	if DEBUG then
-		warn(`[WaveSystem]: {msg}`)
+local DEBUG = false
+local function log(msg: string, level: ("info" | "warn" | "error")?)
+	if not DEBUG then
+		return
+	end
+	local prefix = "[WaveSystem]"
+	if level == "warn" then
+		warn(`{prefix} {msg}`)
+	elseif level == "error" then
+		error(`{prefix} {msg}`)
+	else
+		print(`{prefix} {msg}`)
 	end
 end
 
@@ -91,7 +120,7 @@ function WaveSystem:Start()
 	self:StartCountdown(1)
 end
 
--- ========== Internal Methods ==========
+-- ========== Broadcast Methods ==========
 
 function WaveSystem:Broadcast(packetName: string, data: any, targetPlayer: Player?)
 	local packet = Network[packetName]
@@ -147,7 +176,7 @@ function WaveSystem:HandleGameOver()
 	for _, player in ipairs(Players:GetPlayers()) do
 		Network.GameOver.sendTo({ Won = false, Reset = false }, player)
 	end
-	log("GAME OVER - Base Destroyed")
+	log("GAME OVER - Base Destroyed", "warn")
 end
 
 function WaveSystem:CheckWaveStatus()
@@ -174,7 +203,7 @@ function WaveSystem:HandleVictory()
 		ProfileStoreSystem:AddCash(player, GameConfig.VictoryCashReward or 100)
 		Network.GameOver.sendTo({ Won = true, Reset = false }, player)
 	end
-	log("VICTORY - All waves cleared")
+	log("VICTORY - All waves cleared", "info")
 end
 
 function WaveSystem:RestartGame()
@@ -225,7 +254,7 @@ end
 function WaveSystem:AddCoins(amount: number)
 	self.coins += amount
 	self:BroadcastCoins()
-	log(`Added {amount} coins. Total: {self.coins}`)
+	log(`Added {amount} coins. Total: {self.coins}`, "info")
 end
 
 function WaveSystem:StartCountdown(waveNumber: number)
@@ -274,81 +303,81 @@ end
 
 function WaveSystem:HandleMobMovement(humanoid: Humanoid)
 	local mob = humanoid.Parent
-	local mobName = mob and mob.Name or "Unknown"
-
 	if not humanoid or not mob or not mob.Parent then
 		return
 	end
 
-	-- Local helper for 2D distance check
-	local function getFlatDistance(pos1: Vector3, pos2: Vector3): number
-		return (Vector2.new(pos1.X, pos1.Z) - Vector2.new(pos2.X, pos2.Z)).Magnitude
+	local waypoints = self:GetWaypoints()
+	local mobName = mob.Name
+
+	-- Helper for 2D distance
+	local function getDistance(a: Vector3, b: Vector3): number
+		return (Vector3.new(a.X, 0, a.Z) - Vector3.new(b.X, 0, b.Z)).Magnitude
 	end
 
-	local function moveToAndWait(targetPos: Vector3, label: string): boolean
-		if not mob.Parent or humanoid.Health <= 0 or self.isGameOver then
-			return false
-		end
+	local function moveToPos(targetPos: Vector3, index: number?): boolean
+		local attempt = 0
+		while attempt <= RETRY_LIMIT do
+			attempt += 1
 
-		local currentPos = mob:GetPivot().Position
-		local initialDist = getFlatDistance(targetPos, currentPos)
+			local reached = false
+			local success = false
+			local connection = humanoid.MoveToFinished:Connect(function(moveSuccess)
+				reached = true
+				success = moveSuccess
+			end)
 
-		-- Threshold of 2.5 studs (2D)
-		if initialDist <= 2.5 then
-			return true
-		end
+			humanoid:MoveTo(targetPos)
+			local startTime = tick()
 
-		humanoid:MoveTo(targetPos)
+			while not reached do
+				if not mob.Parent or humanoid.Health <= 0 or self.isGameOver then
+					connection:Disconnect()
+					return false
+				end
 
-		local stuckCheckSeconds = 1.0
-		local stuckThreshold = 0.5
-		local lastPos = currentPos
-		local timer = 0
-		local totalElapsed = 0
+				local dist = getDistance(mob:GetPivot().Position, targetPos)
+				if dist <= ARRIVE_THRESHOLD then
+					connection:Disconnect()
+					return true
+				end
 
-		while mob.Parent and humanoid.Health > 0 and not self.isGameOver do
-			local nowPos = mob:GetPivot().Position
-			local dist = getFlatDistance(targetPos, nowPos)
+				-- Timeout fallback
+				if tick() - startTime >= TIMEOUT then
+					connection:Disconnect()
+					if dist <= CLOSE_ENOUGH then
+						return true -- Close enough, move to next
+					end
+					break -- Retry if too far
+				end
 
-			if dist <= 2.5 then
+				task.wait(0.1)
+			end
+			connection:Disconnect()
+
+			if success then
 				return true
 			end
-
-			totalElapsed += 0.1
-			timer += 0.1
-
-			if timer >= stuckCheckSeconds then
-				local moved = (lastPos - nowPos).Magnitude
-				if moved < stuckThreshold then
-					-- Still re-issue if we haven't reached but aren't moving much
-					humanoid:MoveTo(targetPos)
-				end
-				lastPos = nowPos
-				timer = 0
-			end
-
-			task.wait(0.1)
 		end
 
+		log(`Mob {mobName} failed to reach WP {index or "Core"} after retries`, "warn")
 		return false
 	end
 
-	local waypoints = self:GetWaypoints()
-
+	-- Traverse waypoints
 	for i, waypoint in ipairs(waypoints) do
-		if not moveToAndWait(waypoint.Position, `WP{i}`) then
+		if not moveToPos(waypoint.Position, i) then
 			return
 		end
 	end
 
+	-- Move to core
 	if self.towerCore and mob.Parent and not self.isGameOver then
 		local corePos = self.towerCore:IsA("Model") and self.towerCore:GetPivot().Position or self.towerCore.Position
-		moveToAndWait(corePos, "TowerCore")
+		moveToPos(corePos)
 	end
 
-	if mob.Parent and not self.isGameOver then
-		mob:Destroy()
-	end
+	-- Reached end (Logic handled by SpawnEnemy core detection)
 end
 
 function WaveSystem:SpawnEnemy(enemyName: string)
@@ -356,7 +385,7 @@ function WaveSystem:SpawnEnemy(enemyName: string)
 	local config = EnemyConfig[enemyName]
 
 	if not template or not config then
-		warn(`Mob "{enemyName}" template or config missing`)
+		log(`Mob "{enemyName}" template or config missing`, "warn")
 		return
 	end
 
@@ -371,6 +400,7 @@ function WaveSystem:SpawnEnemy(enemyName: string)
 	mob:SetAttribute("IsMob", true)
 	mob:SetAttribute("Killed", false)
 	mob:SetAttribute("ReachedCore", false)
+	mob:SetAttribute("MovementStarted", true)
 
 	mob:PivotTo(CFrame.new(waypoints[1].Position))
 	mob.Parent = Workspace
@@ -378,23 +408,17 @@ function WaveSystem:SpawnEnemy(enemyName: string)
 	local humanoid = mob:FindFirstChildOfClass("Humanoid")
 	local root = mob.PrimaryPart or mob:FindFirstChild("HumanoidRootPart")
 
-	-- Single atomic flag — prevents ALL duplicate execution paths
 	local isDead = false
-
-	local function onDeath(source: string)
+	local function onDeath(source: "killed" | "core")
 		if isDead then
 			return
 		end
 		isDead = true
 
-		-- Reward only if killed (not if reached core)
 		if source == "killed" and not self.isGameOver then
 			mob:SetAttribute("Killed", true)
 			self:AddCoins(config.Reward)
-		end
-
-		-- Base damage only if reached core
-		if source == "core" then
+		elseif source == "core" then
 			mob:SetAttribute("ReachedCore", true)
 			self:TakeBaseDamage(config.Damage)
 		end
@@ -406,15 +430,10 @@ function WaveSystem:SpawnEnemy(enemyName: string)
 		end)
 	end
 
-	-- Apply stats + Billboard
 	if humanoid then
 		humanoid.MaxHealth = config.Health
 		humanoid.Health = config.Health
 		humanoid.WalkSpeed = config.WalkSpeed or 16
-
-		-- Health bar handled by Client/HealthBarSystem via IsMob attribute
-
-		-- Only one death listener needed (Died fires once, HealthChanged can fire multiple times)
 		humanoid.Died:Connect(function()
 			onDeath("killed")
 		end)
@@ -422,37 +441,30 @@ function WaveSystem:SpawnEnemy(enemyName: string)
 
 	self.enemiesInWave += 1
 
-	-- Core Detection via Touched
+	-- Core Detection (Touched + Distance Fallback)
 	local hitConn
 	if root then
 		hitConn = root.Touched:Connect(function(hit)
-			if isDead then
-				return
-			end
-			if hit:IsDescendantOf(self.towerCore) or hit == self.towerCore then
+			if not isDead and (hit:IsDescendantOf(self.towerCore) or hit == self.towerCore) then
 				onDeath("core")
 			end
 		end)
 	end
 
-	-- Distance fallback — safe because isDead guards all paths
 	task.spawn(function()
-		while mob.Parent ~= nil and not isDead and not self.isGameOver do
+		while mob.Parent and not isDead and not self.isGameOver do
 			if self.towerCore then
 				local corePos = self.towerCore:IsA("Model") and self.towerCore:GetPivot().Position
 					or self.towerCore.Position
-
-				-- pcall guards against destroyed mob mid-loop
 				local ok, mobPos = pcall(function()
 					return mob:GetPivot().Position
 				end)
-
 				if ok and (corePos - mobPos).Magnitude < 6 then
 					onDeath("core")
 					break
 				end
 			end
-			task.wait(0.2)
+			task.wait(0.5) -- Increased wait slightly for performance
 		end
 	end)
 
@@ -461,14 +473,11 @@ function WaveSystem:SpawnEnemy(enemyName: string)
 		if hitConn then
 			hitConn:Disconnect()
 		end
-		hitConn = nil
-
 		self.enemiesInWave -= 1
 		self:CheckWaveStatus()
 	end)
 
-	if not mob:GetAttribute("MovementStarted") then
-		mob:SetAttribute("MovementStarted", true)
+	if humanoid then
 		task.spawn(function()
 			self:HandleMobMovement(humanoid)
 		end)
