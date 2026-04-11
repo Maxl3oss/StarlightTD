@@ -45,6 +45,10 @@ function ProfileStoreSystem:Init()
 			}, player)
 		end
 	end)
+
+	Network.RequestOwnedTowers.listen(function(data, player)
+		self:SyncTowers(player)
+	end)
 end
 
 function ProfileStoreSystem:GetProfile(player: Player)
@@ -85,6 +89,9 @@ function ProfileStoreSystem:PlayerAdded(player: Player)
 			Network.UpdateCash.sendTo({
 				Cash = tonumber(cash) or 0,
 			}, player)
+
+			-- Sync Towers
+			self:SyncTowers(player)
 
 			print(profile.Data)
 		else
@@ -127,6 +134,17 @@ end
 function ProfileStoreSystem:GetCash(player: Player)
 	local profile = self:GetProfile(player)
 	return profile and profile.Data.Cash
+end
+
+function ProfileStoreSystem:SyncTowers(player: Player)
+	local profile = self:GetProfile(player)
+	if profile and profile.Data.Towers then
+		local towerString = table.concat(profile.Data.Towers, ",")
+		Network.UpdateOwnedTowers.sendTo({
+			Towers = towerString,
+		}, player)
+		print(`[ProfileStoreSystem] Synced towers for {player.Name}: {towerString}`)
+	end
 end
 -- ========== Cash player ==========
 

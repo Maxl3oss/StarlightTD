@@ -1,68 +1,94 @@
 local RS = game:GetService("ReplicatedStorage")
 local ByteNet = require(RS.Packages.ByteNet)
 
-local packets = ByteNet.defineNamespace("PlayerStorageNetworks", function()
+local packets = ByteNet.defineNamespace("PlayerStorageNetworks", function(types)
 	return {
 		-- Cash
 		UpdateCash = ByteNet.definePacket({
-			value = ByteNet.struct({
-				Cash = ByteNet.int32,
+			value = types.struct({
+				Cash = types.int32,
 			}),
 			reliability = "reliable",
 		}),
 		RequestCash = ByteNet.definePacket({
-			value = ByteNet.struct({
-				Req = ByteNet.uint8,
+			value = types.struct({
+				Req = types.uint8,
 			}),
 			reliability = "reliable",
 		}),
 		-- Wave
 		UpdateWave = ByteNet.definePacket({
-			value = ByteNet.struct({
-				Wave = ByteNet.int16,
-				IsRunning = ByteNet.bool,
-				Countdown = ByteNet.int8,
+			value = types.struct({
+				Wave = types.int16,
+				IsRunning = types.bool,
+				Countdown = types.int8,
 			}),
 			reliability = "reliable",
 		}),
 		RequestWave = ByteNet.definePacket({
-			value = ByteNet.struct({
-				Req = ByteNet.uint8,
+			value = types.struct({
+				Req = types.uint8,
 			}),
 			reliability = "reliable",
 		}),
 		RequestNextWave = ByteNet.definePacket({
-			value = ByteNet.struct({
-				Req = ByteNet.uint8,
+			value = types.struct({
+				Req = types.uint8,
 			}),
 			reliability = "reliable",
 		}),
 		-- Game State
 		UpdateBaseHealth = ByteNet.definePacket({
-			value = ByteNet.struct({
-				Health = ByteNet.int16,
-				MaxHealth = ByteNet.int16,
+			value = types.struct({
+				Health = types.int16,
+				MaxHealth = types.int16,
 			}),
 			reliability = "reliable",
 		}),
 		GameOver = ByteNet.definePacket({
-			value = ByteNet.struct({
-				Won = ByteNet.bool,
-				Reset = ByteNet.bool,
+			value = types.struct({
+				Won = types.bool,
+				Reset = types.bool,
 			}),
 			reliability = "reliable",
 		}),
 		RestartGame = ByteNet.definePacket({
-			value = ByteNet.struct({
-				Req = ByteNet.uint8,
+			value = types.struct({
+				Req = types.uint8,
 			}),
 			reliability = "reliable",
 		}),
 		UpdateCoins = ByteNet.definePacket({
-			value = ByteNet.struct({
-				Coins = ByteNet.int32,
+			value = types.struct({
+				Coins = types.int32,
 			}),
 			reliability = "reliable",
+		}),
+		PlaceTower = ByteNet.definePacket({
+			value = types.struct({
+				TowerName = types.string,
+				Position = types.vec3,
+			}),
+			reliability = "reliable",
+		}),
+		UpdateOwnedTowers = ByteNet.definePacket({
+			value = types.struct({
+				Towers = types.string, -- Comma separated tower names
+			}),
+			reliability = "reliable",
+		}),
+		RequestOwnedTowers = ByteNet.definePacket({
+			value = types.struct({
+				Req = types.uint8,
+			}),
+			reliability = "reliable",
+		}),
+		TowerShoot = ByteNet.definePacket({
+			value = types.struct({
+				From = types.vec3,
+				To = types.vec3,
+			}),
+			reliability = "unreliable",
 		}),
 	}
 end)
