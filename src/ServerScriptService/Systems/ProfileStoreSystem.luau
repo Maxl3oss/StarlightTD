@@ -13,6 +13,14 @@ local PlayerStore = ProfileStore.New("PlayerStore", require(SS.Data.ProfileTempl
 -- config
 local Profiles: { [Player]: typeof(PlayerStore:StartSessionAsync()) } = {}
 
+-- Debugging
+local DEBUG = false
+local function print(msg: string)
+	if DEBUG then
+		warn(`[ProfileStoreSystem]: {msg}`)
+	end
+end
+
 -- ========== Init ==========
 function ProfileStoreSystem:Init()
 	for _, player in Players:GetPlayers() do
@@ -68,7 +76,7 @@ function ProfileStoreSystem:PlayerAdded(player: Player)
 		if player.Parent == Players then
 			Profiles[player] = profile
 
-			print(`[ProfileStoreSystem]: Profile loaded for {player.DisplayName}!`)
+			print(`Profile loaded for {player.DisplayName}!`)
 
 			profile.Data.Cash = (profile.Data.Cash or 0)
 			player:SetAttribute("DataLoaded", true)
@@ -78,7 +86,6 @@ function ProfileStoreSystem:PlayerAdded(player: Player)
 				Cash = tonumber(cash) or 0,
 			}, player)
 
-			print(`[ProfileStoreSystem]`)
 			print(profile.Data)
 		else
 			profile:EndSession()
