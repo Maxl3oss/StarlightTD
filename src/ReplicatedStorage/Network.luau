@@ -12,7 +12,7 @@ local function getOrRegisterEvent(eventName, config)
 	end
 end
 
-local type = {
+local NetType = {
 	Number = "number",
 	String = "string",
 	Boolean = "boolean",
@@ -33,75 +33,75 @@ return {
 	-- Cash
 	UpdateCash = getOrRegisterEvent("UpdateCash", {
 		typeDefinition = {
-			Cash = type.Number,
+			Cash = NetType.Number,
 		},
 	}),
 	RequestCash = getOrRegisterEvent("RequestCash", {
 		typeDefinition = {
-			Req = type.Number,
+			Req = NetType.Number,
 		},
 	}),
 	-- Wave
 	UpdateWave = getOrRegisterEvent("UpdateWave", {
 		typeDefinition = {
-			Wave = type.Number,
-			IsRunning = type.Boolean,
-			Countdown = type.Number,
+			Wave = NetType.Number,
+			IsRunning = NetType.Boolean,
+			Countdown = NetType.Number,
 		},
 	}),
 	RequestWave = getOrRegisterEvent("RequestWave", {
 		typeDefinition = {
-			Req = type.Number,
+			Req = NetType.Number,
 		},
 	}),
 	RequestNextWave = getOrRegisterEvent("RequestNextWave", {
 		typeDefinition = {
-			Req = type.Number,
+			Req = NetType.Number,
 		},
 	}),
 	-- Game State
 	UpdateBaseHealth = getOrRegisterEvent("UpdateBaseHealth", {
 		typeDefinition = {
-			Health = type.Number,
-			MaxHealth = type.Number,
+			Health = NetType.Number,
+			MaxHealth = NetType.Number,
 		},
 	}),
 	GameOver = getOrRegisterEvent("GameOver", {
 		typeDefinition = {
-			Won = type.Boolean,
-			Reset = type.Boolean,
+			Won = NetType.Boolean,
+			Reset = NetType.Boolean,
 		},
 	}),
 	RestartGame = getOrRegisterEvent("RestartGame", {
 		typeDefinition = {
-			Req = type.Number,
+			Req = NetType.Number,
 		},
 	}),
 	UpdateCoins = getOrRegisterEvent("UpdateCoins", {
 		typeDefinition = {
-			Coins = type.Number,
+			Coins = NetType.Number,
 		},
 	}),
 	PlaceTower = getOrRegisterEvent("PlaceTower", {
 		typeDefinition = {
-			TowerName = type.String,
-			Position = type.Vector3,
+			TowerName = NetType.String,
+			Position = NetType.Vector3,
 		},
 	}),
 	UpdateOwnedTowers = getOrRegisterEvent("UpdateOwnedTowers", {
 		typeDefinition = {
-			Towers = type.String,
+			Towers = NetType.String,
 		},
 	}),
 	RequestOwnedTowers = getOrRegisterEvent("RequestOwnedTowers", {
 		typeDefinition = {
-			Req = type.Number,
+			Req = NetType.Number,
 		},
 	}),
 	TowerShoot = getOrRegisterEvent("TowerShoot", {
 		typeDefinition = {
-			From = type.Vector3,
-			To = type.Vector3,
+			From = NetType.Vector3,
+			To = NetType.Vector3,
 		},
 	}),
 }
