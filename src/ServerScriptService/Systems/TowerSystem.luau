@@ -109,13 +109,17 @@ function TowerSystem:GetTowerTemplate(name: string): Model?
 	return towersFolder:FindFirstChild(name)
 end
 
+local function getDistance2D(p1: Vector3, p2: Vector3)
+	return (Vector2.new(p1.X, p1.Z) - Vector2.new(p2.X, p2.Z)).Magnitude
+end
+
 function TowerSystem:GetClosestTarget(position: Vector3, range: number): Model?
 	local closestDist = range
 	local closestTarget = nil
 
 	for _, mob in ipairs(Workspace:GetChildren()) do
 		if mob:GetAttribute("IsMob") and mob:FindFirstChild("HumanoidRootPart") then
-			local dist = (mob.HumanoidRootPart.Position - position).Magnitude
+			local dist = getDistance2D(mob.HumanoidRootPart.Position, position)
 			if dist < closestDist then
 				closestDist = dist
 				closestTarget = mob
@@ -136,7 +140,7 @@ function TowerSystem:UpdateTowers(dt: number)
 		if
 			not tower.Target
 			or not tower.Target.Parent
-			or (tower.Target.HumanoidRootPart.Position - towerPos).Magnitude > tower.Config.Range
+			or getDistance2D(tower.Target:GetPivot().Position, towerPos) > tower.Config.Range
 		then
 			tower.Target = self:GetClosestTarget(towerPos, tower.Config.Range)
 		end
@@ -155,25 +159,59 @@ function TowerSystem:FireTower(tower)
 		return
 	end
 
-	local humanoid = target:FindFirstChildOfClass("Humanoid")
-	if humanoid then
-		local damage = tower.Config.Damage
-		humanoid:TakeDamage(damage)
+	local config = tower.Config
+	local towerPos = tower.Instance:GetPivot().Position
+	local centerPos = if config.AoECenter == "Tower" then towerPos else target:GetPivot().Position
 
-		-- Gradual Reward Logic
-		local config = EnemyConfig[target.Name]
-		if config then
-			local rewardPerDamage = config.Reward / config.Health
-			local gain = damage * rewardPerDamage
-			WaveSystem:AddCoins(gain)
+	if config.AttackType == "AoE" then
+		-- Area of Effect Damage
+		local radius = config.BlastRadius or 10
+		local hitCount = 0
+
+		for _, mob in ipairs(Workspace:GetChildren()) do
+			if mob:GetAttribute("IsMob") then
+				local humanoid = mob:FindFirstChildOfClass("Humanoid")
+				local hrp = mob:FindFirstChild("HumanoidRootPart")
+				
+				if humanoid and hrp then
+					local dist = getDistance2D(hrp.Position, centerPos)
+					if dist <= radius then
+						humanoid:TakeDamage(config.Damage)
+
+						-- Reward logic
+						local enemyCfg = EnemyConfig[mob.Name]
+						if enemyCfg then
+							local rewardPerDamage = enemyCfg.Reward / enemyCfg.Health
+							WaveSystem:AddCoins(config.Damage * rewardPerDamage)
+						end
+						hitCount += 1
+					end
+				end
+			end
 		end
+		print(`[TowerSystem] {config.Name} AoE at {config.AoECenter} hit {hitCount} targets (Radius: {radius})`)
+	else
+		-- Single Target Damage
+		local humanoid = target:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			humanoid:TakeDamage(config.Damage)
 
-		-- Visuals (Send to client)
-		Network.TowerShoot:FireAllClients({
-			From = tower.Instance:GetPivot().Position + Vector3.new(0, 3, 0), -- Roughly tower head
-			To = target:GetPivot().Position,
-		})
+			-- Gradual Reward Logic
+			local enemyCfg = EnemyConfig[target.Name]
+			if enemyCfg then
+				local rewardPerDamage = enemyCfg.Reward / enemyCfg.Health
+				WaveSystem:AddCoins(config.Damage * rewardPerDamage)
+			end
+		end
 	end
+
+	-- Visuals
+	Network.TowerShoot:FireAllClients({
+		From = tower.Instance:GetPivot().Position + Vector3.new(0, 3, 0),
+		To = centerPos,
+		TowerName = config.Name,
+		TowerInstance = tower.Instance,
+	})
 end
 
 return TowerSystem

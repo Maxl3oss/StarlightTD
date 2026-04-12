@@ -102,6 +102,8 @@ return {
 		typeDefinition = {
 			From = NetType.Vector3,
 			To = NetType.Vector3,
+			TowerName = NetType.String,
+			TowerInstance = NetType.Instance,
 		},
 	}),
 }

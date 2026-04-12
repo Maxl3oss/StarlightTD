@@ -15,7 +15,9 @@ function TowerUISystem:Init(framework)
 	self.playerGui = self.player:WaitForChild("PlayerGui")
 	self.framework = framework
 
-	self.ownedTowers = Fusion.Value({})
+	self.scope = Fusion.scoped(Fusion)
+	self.ownedTowers = self.scope:Value({})
+	self.selectedTower = self.scope:Value(nil :: string?)
 end
 
 function TowerUISystem:Start()
@@ -59,14 +61,38 @@ function TowerUISystem:Start()
 
 	TowerSelection({
 		OwnedTowers = self.ownedTowers,
+		SelectedTower = self.selectedTower,
 		OnSelect = function(towerName)
 			local placementSystem = self.framework.systems["PlacementSystem"]
-			if placementSystem then
+			if not placementSystem then
+				return
+			end
+
+			local current = Fusion.peek(self.selectedTower)
+			if current == towerName then
+				-- Toggle OFF
+				self.selectedTower:set(nil)
+				if placementSystem.isPlacing then
+					placementSystem:CancelPlacement()
+				end
+			else
+				-- Toggle ON
+				self.selectedTower:set(towerName)
 				placementSystem:StartPlacement(towerName)
 			end
 		end,
 		Parent = screenGui,
 	})
+
+	-- Sync deselection if PlacementSystem cancels (e.g. Q key)
+	task.spawn(function()
+		while task.wait(0.1) do
+			local placementSystem = self.framework.systems["PlacementSystem"]
+			if placementSystem and not placementSystem.isPlacing and Fusion.peek(self.selectedTower) ~= nil then
+				self.selectedTower:set(nil)
+			end
+		end
+	end)
 
 	warn("[TowerUISystem] UI Mounted")
 end
