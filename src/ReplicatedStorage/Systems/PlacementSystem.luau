@@ -244,7 +244,7 @@ function PlacementSystem:ConfirmPlacement()
 		return
 	end
 
-	Network.PlaceTower.send({
+	Network.PlaceTower:FireServer({
 		TowerName = self.currentTowerName,
 		Position = self.targetPosition,
 	})

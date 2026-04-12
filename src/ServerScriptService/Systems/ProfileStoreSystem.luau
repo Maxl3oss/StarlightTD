@@ -14,7 +14,7 @@ local PlayerProfileStore = ProfileStore.New("PlayerStore", require(SS.Configs.Pr
 local Profiles: { [Player]: typeof(PlayerProfileStore:StartSessionAsync()) } = {}
 
 -- Debugging
-local DEBUG = false
+local DEBUG = true
 local function print(msg: string)
 	if DEBUG then
 		warn(`[ProfileStoreSystem]: {msg}`)
@@ -44,6 +44,10 @@ function ProfileStoreSystem:Init()
 				Cash = tonumber(profile.Data.Cash) or 0,
 			})
 		end
+	end)
+
+	Network.RequestOwnedTowers:OnEvent(function(player, data: { Req: number })
+		self:SyncTowers(player)
 	end)
 end
 
@@ -86,7 +90,7 @@ function ProfileStoreSystem:PlayerAdded(player: Player)
 				Cash = tonumber(cash) or 0,
 			})
 
-			print(profile.Data)
+			self:SyncTowers(player)
 		else
 			profile:EndSession()
 		end
@@ -129,5 +133,16 @@ function ProfileStoreSystem:GetCash(player: Player)
 	return profile and profile.Data.Cash
 end
 -- ========== Cash player ==========
+
+function ProfileStoreSystem:SyncTowers(player: Player)
+	local profile = self:GetProfile(player)
+	if profile and profile.Data.Towers then
+		local towerString = table.concat(profile.Data.Towers, ",")
+		Network.UpdateOwnedTowers:FireClient(player, {
+			Towers = towerString,
+		})
+		print(`[ProfileStoreSystem] Synced towers for {player.Name}: {towerString}`)
+	end
+end
 
 return ProfileStoreSystem
