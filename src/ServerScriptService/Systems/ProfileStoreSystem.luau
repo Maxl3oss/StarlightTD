@@ -37,17 +37,13 @@ function ProfileStoreSystem:Init()
 		self:PlayerRemoving(player)
 	end)
 
-	Network.RequestCash.listen(function(data, player)
+	Network.RequestCash:OnEvent(function(player, data)
 		local profile = Profiles[player]
 		if profile then
-			Network.UpdateCash.sendTo({
+			Network.UpdateCash:FireClient(player, {
 				Cash = tonumber(profile.Data.Cash) or 0,
-			}, player)
+			})
 		end
-	end)
-
-	Network.RequestOwnedTowers.listen(function(data, player)
-		self:SyncTowers(player)
 	end)
 end
 
@@ -86,12 +82,9 @@ function ProfileStoreSystem:PlayerAdded(player: Player)
 			player:SetAttribute("DataLoaded", true)
 
 			local cash = profile.Data.Cash
-			Network.UpdateCash.sendTo({
+			Network.UpdateCash:FireClient(player, {
 				Cash = tonumber(cash) or 0,
-			}, player)
-
-			-- Sync Towers
-			self:SyncTowers(player)
+			})
 
 			print(profile.Data)
 		else
@@ -115,9 +108,9 @@ function ProfileStoreSystem:AddCash(player: Player, amount: number)
 	local profile = self:GetProfile(player)
 	if profile ~= nil then
 		profile.Data.Cash = (profile.Data.Cash or 0) + amount
-		Network.UpdateCash.sendTo({
+		Network.UpdateCash:FireClient(player, {
 			Cash = tonumber(profile.Data.Cash) or 0,
-		}, player)
+		})
 	end
 end
 
@@ -125,26 +118,15 @@ function ProfileStoreSystem:RemoveCash(player: Player, amount: number)
 	local profile = self:GetProfile(player)
 	if profile ~= nil then
 		profile.Data.Cash = (profile.Data.Cash or 0) - amount
-		Network.UpdateCash.sendTo({
+		Network.UpdateCash:FireClient(player, {
 			Cash = tonumber(profile.Data.Cash) or 0,
-		}, player)
+		})
 	end
 end
 
 function ProfileStoreSystem:GetCash(player: Player)
 	local profile = self:GetProfile(player)
 	return profile and profile.Data.Cash
-end
-
-function ProfileStoreSystem:SyncTowers(player: Player)
-	local profile = self:GetProfile(player)
-	if profile and profile.Data.Towers then
-		local towerString = table.concat(profile.Data.Towers, ",")
-		Network.UpdateOwnedTowers.sendTo({
-			Towers = towerString,
-		}, player)
-		print(`[ProfileStoreSystem] Synced towers for {player.Name}: {towerString}`)
-	end
 end
 -- ========== Cash player ==========
 

@@ -18,14 +18,12 @@ function WaveClientSystem:Init()
 	if not mainUI then
 		mainUI = Instance.new("ScreenGui")
 		mainUI.Name = "MainUI"
+		mainUI.ResetOnSpawn = false
 		mainUI.Parent = playerGui
 	end
-	mainUI.ResetOnSpawn = false
 
 	-- State management using Fusion
-	self.scope = Fusion.scoped({ Value = Fusion.Value })
-	local scope = self.scope
-
+	local scope = Fusion.scoped({ Value = Fusion.Value })
 	self.waveState = scope:Value(0)
 	self.isRunningState = scope:Value(false)
 	self.countdownState = scope:Value(0)
@@ -38,22 +36,22 @@ function WaveClientSystem:Init()
 	self.coinsState = scope:Value(300)
 
 	-- Sync state from server broadcasts
-	Network.UpdateWave.listen(function(data)
+	Network.UpdateWave:OnEvent(function(data)
 		self.waveState:set(data.Wave)
 		self.isRunningState:set(data.IsRunning)
 		self.countdownState:set(data.Countdown)
 	end)
 
-	Network.UpdateBaseHealth.listen(function(data)
+	Network.UpdateBaseHealth:OnEvent(function(data)
 		self.healthState:set(data.Health)
 		self.maxHealthState:set(data.MaxHealth)
 	end)
 
-	Network.UpdateCoins.listen(function(data)
+	Network.UpdateCoins:OnEvent(function(data)
 		self.coinsState:set(data.Coins)
 	end)
 
-	Network.GameOver.listen(function(data)
+	Network.GameOver:OnEvent(function(data)
 		if data.Reset then
 			self.isGameOverState:set(false)
 		else
@@ -63,7 +61,7 @@ function WaveClientSystem:Init()
 	end)
 
 	-- Request current server state on initialization
-	Network.RequestWave.send({ Req = 1 })
+	Network.RequestWave:FireServer({ Req = 1 })
 
 	-- Mount UI Components
 	self.display = WaveDisplay({
@@ -71,7 +69,7 @@ function WaveClientSystem:Init()
 		IsRunning = self.isRunningState,
 		Countdown = self.countdownState,
 		OnNextWave = function()
-			Network.RequestNextWave.send({ Req = 1 })
+			Network.RequestNextWave:FireServer({ Req = 1 })
 		end,
 		Parent = mainUI,
 	})
@@ -86,7 +84,7 @@ function WaveClientSystem:Init()
 		Won = self.wonState,
 		OnRestart = function()
 			self.isGameOverState:set(false)
-			Network.RestartGame.send({ Req = 1 })
+			Network.RestartGame:FireServer({ Req = 1 })
 		end,
 		Parent = mainUI,
 	})

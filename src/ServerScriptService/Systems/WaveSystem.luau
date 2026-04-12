@@ -98,17 +98,17 @@ function WaveSystem:Init()
 	self.coins = GameConfig.StartingCoins or 300
 
 	-- Network Listeners
-	Network.RequestWave.listen(function(_, player)
+	Network.RequestWave:OnEvent(function(player, _)
 		self:BroadcastState(player)
 		self:BroadcastHealth(player)
 		self:BroadcastCoins(player)
 	end)
 
-	Network.RequestNextWave.listen(function(_, player)
+	Network.RequestNextWave:OnEvent(function(player, _)
 		self:NextWave()
 	end)
 
-	Network.RestartGame.listen(function(_, player)
+	Network.RestartGame:OnEvent(function(player, _)
 		self:RestartGame()
 	end)
 end
@@ -129,11 +129,9 @@ function WaveSystem:Broadcast(packetName: string, data: any, targetPlayer: Playe
 	end
 
 	if targetPlayer then
-		packet.sendTo(data, targetPlayer)
+		packet:FireClient(targetPlayer, data)
 	else
-		for _, player in ipairs(Players:GetPlayers()) do
-			packet.sendTo(data, player)
-		end
+		packet:FireAllClients(data)
 	end
 end
 
@@ -173,9 +171,7 @@ function WaveSystem:HandleGameOver()
 		end
 	end
 
-	for _, player in ipairs(Players:GetPlayers()) do
-		Network.GameOver.sendTo({ Won = false, Reset = false }, player)
-	end
+	Network.GameOver:FireAllClients({ Won = false, Reset = false })
 	log("GAME OVER - Base Destroyed", "warn")
 end
 
@@ -198,11 +194,10 @@ function WaveSystem:HandleVictory()
 	self.isWaveRunning = false
 	self.isWaveSpawning = false
 
-	-- Grant global Cash reward for winning the game
 	for _, player in ipairs(Players:GetPlayers()) do
 		ProfileStoreSystem:AddCash(player, GameConfig.VictoryCashReward or 100)
-		Network.GameOver.sendTo({ Won = true, Reset = false }, player)
 	end
+	Network.GameOver:FireAllClients({ Won = true, Reset = false })
 	log("VICTORY - All waves cleared", "info")
 end
 
@@ -228,9 +223,7 @@ function WaveSystem:RestartGame()
 
 	self:BroadcastHealth()
 	self:BroadcastCoins()
-	for _, player in ipairs(Players:GetPlayers()) do
-		Network.GameOver.sendTo({ Won = false, Reset = true }, player)
-	end
+	Network.GameOver:FireAllClients({ Won = false, Reset = true })
 
 	-- Sync game state
 	self:BroadcastState()

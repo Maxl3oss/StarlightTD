@@ -16,6 +16,14 @@ local frameworkClient = {
 
 frameworkClient.__index = frameworkClient
 
+-- Debugging
+local DEBUG = false
+local function print(msg: string)
+	if DEBUG then
+		warn(`[Framework Client]: {msg}`)
+	end
+end
+
 function frameworkClient:Init()
 	if self.flages.init then
 		print("Already initialized")
@@ -27,14 +35,14 @@ function frameworkClient:Init()
 
 	for name, system in pairs(self.systems) do
 		if system.Init then
-			warn("[Framework Client]: Initializing : ", name)
+			print("Initializing : " .. name)
 			system:Init(self)
 		end
 	end
 
 	for name, system in pairs(self.systems) do
 		if system.Start then
-			warn("[Framework Client]:Starting : ", name)
+			print("Starting : " .. name)
 			system:Start(self)
 		end
 	end

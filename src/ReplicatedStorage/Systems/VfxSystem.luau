@@ -8,7 +8,7 @@ local Network = require(RS.Network)
 function VfxSystem:Init() end
 
 function VfxSystem:Start()
-	Network.TowerShoot.listen(function(data)
+	Network.TowerShoot:OnEvent(function(data)
 		self:CreateLaser(data.From, data.To)
 	end)
 end

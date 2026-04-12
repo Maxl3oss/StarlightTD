@@ -1,96 +1,107 @@
 local RS = game:GetService("ReplicatedStorage")
-local ByteNet = require(RS.Packages.ByteNet)
+local RunService = game:GetService("RunService")
+local NetRay = require(RS.Packages.NetRay)
 
-local packets = ByteNet.defineNamespace("PlayerStorageNetworks", function()
-	return {
-		-- Cash
-		UpdateCash = ByteNet.definePacket({
-			value = ByteNet.struct({
-				Cash = ByteNet.int32,
-			}),
-			reliability = "reliable",
-		}),
-		RequestCash = ByteNet.definePacket({
-			value = ByteNet.struct({
-				Req = ByteNet.uint8,
-			}),
-			reliability = "reliable",
-		}),
-		-- Wave
-		UpdateWave = ByteNet.definePacket({
-			value = ByteNet.struct({
-				Wave = ByteNet.int16,
-				IsRunning = ByteNet.bool,
-				Countdown = ByteNet.int8,
-			}),
-			reliability = "reliable",
-		}),
-		RequestWave = ByteNet.definePacket({
-			value = ByteNet.struct({
-				Req = ByteNet.uint8,
-			}),
-			reliability = "reliable",
-		}),
-		RequestNextWave = ByteNet.definePacket({
-			value = ByteNet.struct({
-				Req = ByteNet.uint8,
-			}),
-			reliability = "reliable",
-		}),
-		-- Game State
-		UpdateBaseHealth = ByteNet.definePacket({
-			value = ByteNet.struct({
-				Health = ByteNet.int16,
-				MaxHealth = ByteNet.int16,
-			}),
-			reliability = "reliable",
-		}),
-		GameOver = ByteNet.definePacket({
-			value = ByteNet.struct({
-				Won = ByteNet.bool,
-				Reset = ByteNet.bool,
-			}),
-			reliability = "reliable",
-		}),
-		RestartGame = ByteNet.definePacket({
-			value = ByteNet.struct({
-				Req = ByteNet.uint8,
-			}),
-			reliability = "reliable",
-		}),
-		UpdateCoins = ByteNet.definePacket({
-			value = ByteNet.struct({
-				Coins = ByteNet.int32,
-			}),
-			reliability = "reliable",
-		}),
-		PlaceTower = ByteNet.definePacket({
-			value = ByteNet.struct({
-				TowerName = ByteNet.string,
-				Position = ByteNet.vec3,
-			}),
-			reliability = "reliable",
-		}),
-		UpdateOwnedTowers = ByteNet.definePacket({
-			value = ByteNet.struct({
-				Towers = ByteNet.string,
-			}),
-			reliability = "reliable",
-		}),
-		RequestOwnedTowers = ByteNet.definePacket({
-			value = ByteNet.struct({
-				Req = ByteNet.uint8,
-			}),
-			reliability = "reliable",
-		}),
-		TowerShoot = ByteNet.definePacket({
-			value = ByteNet.struct({
-				From = ByteNet.vec3,
-				To = ByteNet.vec3,
-			}),
-			reliability = "unreliable",
-		}),
-	}
-end)
+local isServer = RunService:IsServer()
 
-return packets
+local function getOrRegisterEvent(eventName, config)
+	if isServer then
+		return NetRay:RegisterEvent(eventName, config)
+	else
+		return NetRay:GetEvent(eventName)
+	end
+end
+
+local type = {
+	Number = "number",
+	String = "string",
+	Boolean = "boolean",
+	Vector3 = "Vector3",
+	CFrame = "CFrame",
+	UDim2 = "UDim2",
+	Color3 = "Color3",
+	BrickColor = "BrickColor",
+	Enum = "Enum",
+	Instance = "Instance",
+	Table = "table",
+	Function = "function",
+	Thread = "thread",
+	Any = "any",
+}
+
+return {
+	-- Cash
+	UpdateCash = getOrRegisterEvent("UpdateCash", {
+		typeDefinition = {
+			Cash = type.Number,
+		},
+	}),
+	RequestCash = getOrRegisterEvent("RequestCash", {
+		typeDefinition = {
+			Req = type.Number,
+		},
+	}),
+	-- Wave
+	UpdateWave = getOrRegisterEvent("UpdateWave", {
+		typeDefinition = {
+			Wave = type.Number,
+			IsRunning = type.Boolean,
+			Countdown = type.Number,
+		},
+	}),
+	RequestWave = getOrRegisterEvent("RequestWave", {
+		typeDefinition = {
+			Req = type.Number,
+		},
+	}),
+	RequestNextWave = getOrRegisterEvent("RequestNextWave", {
+		typeDefinition = {
+			Req = type.Number,
+		},
+	}),
+	-- Game State
+	UpdateBaseHealth = getOrRegisterEvent("UpdateBaseHealth", {
+		typeDefinition = {
+			Health = type.Number,
+			MaxHealth = type.Number,
+		},
+	}),
+	GameOver = getOrRegisterEvent("GameOver", {
+		typeDefinition = {
+			Won = type.Boolean,
+			Reset = type.Boolean,
+		},
+	}),
+	RestartGame = getOrRegisterEvent("RestartGame", {
+		typeDefinition = {
+			Req = type.Number,
+		},
+	}),
+	UpdateCoins = getOrRegisterEvent("UpdateCoins", {
+		typeDefinition = {
+			Coins = type.Number,
+		},
+	}),
+	PlaceTower = getOrRegisterEvent("PlaceTower", {
+		typeDefinition = {
+			TowerName = type.String,
+			Position = type.Vector3,
+		},
+	}),
+	UpdateOwnedTowers = getOrRegisterEvent("UpdateOwnedTowers", {
+		typeDefinition = {
+			Towers = type.String,
+		},
+	}),
+	RequestOwnedTowers = getOrRegisterEvent("RequestOwnedTowers", {
+		typeDefinition = {
+			Req = type.Number,
+		},
+	}),
+	TowerShoot = getOrRegisterEvent("TowerShoot", {
+		typeDefinition = {
+			From = type.Vector3,
+			To = type.Vector3,
+		},
+	}),
+}

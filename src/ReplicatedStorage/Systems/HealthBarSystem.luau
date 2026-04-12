@@ -72,7 +72,7 @@ function HealthBarSystem:SetupCoreHealthBar(towerCore: Instance)
 
 	local billboard = self:CreateBillboardHP(towerCore, health, maxHealth, "CoreHP", "BASE CORE")
 
-	Network.UpdateBaseHealth.listen(function(data)
+	Network.UpdateBaseHealth:OnEvent(function(data)
 		self:UpdateBillboardHP(billboard, data.Health, data.MaxHealth)
 	end)
 end

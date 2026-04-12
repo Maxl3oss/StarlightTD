@@ -31,7 +31,7 @@ function TowerSystem:Init()
 	self.towersFolder.Parent = Workspace
 
 	-- Listen for placement requests
-	Network.PlaceTower.listen(function(data, player)
+	Network.PlaceTower:OnEvent(function(player, data)
 		self:HandlePlaceTower(player, data.TowerName, data.Position)
 	end)
 end
@@ -169,7 +169,7 @@ function TowerSystem:FireTower(tower)
 		end
 
 		-- Visuals (Send to client)
-		Network.TowerShoot.send({
+		Network.TowerShoot:FireAllClients({
 			From = tower.Instance:GetPivot().Position + Vector3.new(0, 3, 0), -- Roughly tower head
 			To = target:GetPivot().Position,
 		})
