@@ -114,7 +114,24 @@ return {
 	}),
 	RequestUpgrade = getOrRegisterEvent("RequestUpgrade", {
 		typeDefinition = {
+			TowerId = NetType.String,
+		},
+	}),
+	RequestSell = getOrRegisterEvent("RequestSell", {
+		typeDefinition = {
+			TowerId = NetType.String,
+		},
+	}),
+	TowerPlaced = getOrRegisterEvent("TowerPlaced", {
+		typeDefinition = {
 			TowerInstance = NetType.Instance,
+			TowerName = NetType.String,
+			TowerId = NetType.String,
+		},
+	}),
+	TowerRemoved = getOrRegisterEvent("TowerRemoved", {
+		typeDefinition = {
+			TowerId = NetType.String,
 		},
 	}),
 }

@@ -128,11 +128,25 @@ function PlacementSystem:HandleSelection()
 		local model = result.Instance:FindFirstAncestorOfClass("Model")
 		-- Ensure the model is actually a tower (in Workspace.Towers)
 		if model and model.Parent == Workspace:FindFirstChild("Towers") then
+			if self.selectedTower == model then return end
+			self:Deselect()
+
 			self.selectedTower = model
 			self.selectionBox.Adornee = model
+			
 			local config = TowerConfig[model.Name]
 			if config then
-				self:ShowRange(model:GetPivot().Position, config.Levels[1].Range)
+				local function updateRange()
+					local currentLevel = model:GetAttribute("Level") or 1
+					local levelConfig = config.Levels[currentLevel]
+					if levelConfig then
+						self:ShowRange(model:GetPivot().Position, levelConfig.Range)
+					end
+				end
+
+				updateRange()
+				-- ดักฟังเลเวลเพื่อขยายวง Range ทันทีที่อัปเกรดสำเร็จ
+				self.selectedLevelConn = model:GetAttributeChangedSignal("Level"):Connect(updateRange)
 			end
 			return
 		end
@@ -145,6 +159,10 @@ end
 function PlacementSystem:Deselect()
 	self.selectedTower = nil
 	self.selectionBox.Adornee = nil
+	if self.selectedLevelConn then
+		self.selectedLevelConn:Disconnect()
+		self.selectedLevelConn = nil
+	end
 	self:HideRange()
 end
 
@@ -291,7 +309,11 @@ function PlacementSystem:UpdateHover()
 		local model = result.Instance:FindFirstAncestorOfClass("Model")
 		local config = model and TowerConfig[model.Name]
 		if model and config then
-			self:ShowRange(model:GetPivot().Position, config.Levels[1].Range)
+			local currentLevel = model:GetAttribute("Level") or 1
+			local levelConfig = config.Levels[currentLevel]
+			if levelConfig then
+				self:ShowRange(model:GetPivot().Position, levelConfig.Range)
+			end
 			return
 		end
 	end

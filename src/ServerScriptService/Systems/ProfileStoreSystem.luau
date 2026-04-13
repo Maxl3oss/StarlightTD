@@ -141,7 +141,7 @@ function ProfileStoreSystem:SyncTowers(player: Player)
 		Network.UpdateOwnedTowers:FireClient(player, {
 			Towers = towerString,
 		})
-		print(`[ProfileStoreSystem] Synced towers for {player.Name}: {towerString}`)
+		print(`Synced towers for {player.Name}: {towerString}`)
 	end
 end
 

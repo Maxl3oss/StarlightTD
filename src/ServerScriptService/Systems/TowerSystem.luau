@@ -12,6 +12,7 @@ local TowerConfig = require(RS.Configs.TowerConfig)
 local EnemyConfig = require(SS.Configs.EnemyConfig)
 local Network = require(RS.Network)
 local GameConfig = require(SS.Configs.GameConfig)
+local HttpService = game:GetService("HttpService")
 
 -- Constants
 local TARGET_INTERVAL = 0.5
@@ -35,57 +36,75 @@ function TowerSystem:Init(framework)
 	Network.PlaceTower:OnEvent(function(player, data)
 		self:HandlePlaceTower(player, data.TowerName, data.Position)
 	end)
-
 	-- Upgrade Request
 	Network.RequestUpgrade:OnEvent(function(requestingPlayer, data)
 		local waveSystem = self.framework.systems["WaveSystem"]
-		if not waveSystem then
-			return
-		end
+		if not waveSystem then return end
 
-		local towerInstance = data.TowerInstance
-		local foundTower = nil
+		local towerData = nil
 		for _, t in ipairs(self.towers) do
-			if t.Instance == towerInstance then
-				foundTower = t
+			if t.Id == data.TowerId then
+				towerData = t
 				break
 			end
 		end
 
-		if not foundTower then
-			return
-		end
-
-		local config = foundTower.Config
-		local currentLevel = foundTower.Level
+		if not towerData then return end
+		local config = towerData.Config
+		local currentLevel = towerData.Level
 		local nextLevel = currentLevel + 1
 
-		if nextLevel > 5 then
+		if nextLevel > #config.Levels then
 			Network.Notify:FireClient(requestingPlayer, { Message = "Already at max level!", Type = "Error" })
 			return
 		end
 
-		local levelConfig = config.Levels[currentLevel]
-		local upgradeCost = levelConfig.UpgradeCost
-
+		local upgradeCost = config.Levels[currentLevel].UpgradeCost
 		if waveSystem.coins < upgradeCost then
-			Network.Notify:FireClient(
-				requestingPlayer,
-				{ Message = `Not enough coins! (Need {upgradeCost})`, Type = "Error" }
-			)
+			Network.Notify:FireClient(requestingPlayer, { Message = `Not enough coins! (Need {upgradeCost})`, Type = "Error" })
 			return
 		end
 
-		-- Deduct coins and Level up
+		-- Apply Upgrade
 		waveSystem:AddCoins(-upgradeCost)
-		foundTower.Level = nextLevel
-		foundTower.Instance:SetAttribute("Level", nextLevel)
-		print(`[TowerSystem] Upgraded {config.Name} to Level {nextLevel} for Player {requestingPlayer.Name}`)
+		towerData.Level = nextLevel
+		towerData.Instance:SetAttribute("Level", nextLevel)
+		
+		warn(`[TowerSystem] Upgrade: {config.Name} -> Lv {nextLevel} (Player: {requestingPlayer.Name})`)
+		Network.Notify:FireClient(requestingPlayer, { Message = `{config.Name} upgraded to Level {nextLevel}!`, Type = "Success" })
+	end)
 
-		Network.Notify:FireClient(
-			requestingPlayer,
-			{ Message = `{config.Name} upgraded to Level {nextLevel}!`, Type = "Success" }
-		)
+	-- Sell Request
+	Network.RequestSell:OnEvent(function(player, data)
+		local waveSystem = self.framework.systems["WaveSystem"]
+		if not waveSystem then return end
+
+		local foundIdx, towerData = nil, nil
+		for i, t in ipairs(self.towers) do
+			if t.Id == data.TowerId then
+				foundIdx, towerData = i, t
+				break
+			end
+		end
+
+		if not towerData then return end
+
+		-- Calculate Refund (70% total investment)
+		local totalInvested = towerData.Config.Cost
+		for lv = 1, towerData.Level - 1 do
+			totalInvested += towerData.Config.Levels[lv].UpgradeCost
+		end
+		local refundAmount = math.floor(totalInvested * 0.7)
+
+		-- Execute Sell
+		waveSystem:AddCoins(refundAmount)
+		if towerData.Instance then towerData.Instance:Destroy() end
+		table.remove(self.towers, foundIdx)
+
+		-- Broadcast & Notify
+		Network.TowerRemoved:FireAllClients({ TowerId = data.TowerId })
+		warn(`[TowerSystem] Sell: {towerData.Config.Name} (+{refundAmount} Coins)`)
+		Network.Notify:FireClient(player, { Message = `{towerData.Config.Name} sold for {refundAmount} coins!`, Type = "Success" })
 	end)
 end
 
@@ -212,9 +231,12 @@ function TowerSystem:HandlePlaceTower(player: Player, towerName: string, positio
 
 	-- Add to active towers
 	-- Set initial level attribute
+	local towerId = HttpService:GenerateGUID(false)
 	towerModel:SetAttribute("Level", 1)
+	towerModel:SetAttribute("TowerId", towerId)
 
 	local towerData = {
+		Id = towerId,
 		Instance = towerModel,
 		Config = config,
 		Level = 1,
@@ -223,7 +245,14 @@ function TowerSystem:HandlePlaceTower(player: Player, towerName: string, positio
 	}
 	table.insert(self.towers, towerData)
 
-	print(`Player {player.Name} placed {towerName}`)
+	-- Broadcast placement to all clients for World UI
+	Network.TowerPlaced:FireAllClients({
+		TowerInstance = towerModel,
+		TowerName = towerName,
+		TowerId = towerId,
+	})
+
+	warn(`[TowerSystem] Player {player.Name} placed {towerName} (ID: {towerId})`)
 end
 
 function TowerSystem:GetTowerTemplate(name: string): Model?

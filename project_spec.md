@@ -91,10 +91,16 @@
 
 ### 2. Visual Standards
 - **Tower Selection:** Always use the `Highlight` instance (Aura/Outline style) when a tower is selected. Avoid using `SelectionBox` (wireframe) for primary selection visuals.
+- **World UI:** All placed towers must feature a `BillboardGui` (via `WorldTowerInfo`) displaying the tower name and current level. Placement systems must include foolproof mounting logic (e.g., `ChildAdded` listeners) to ensure visuals are attached even during network latency.
+- **Placement Preview:** While in placement mode, a summary of the tower's Base Stats (Damage, Range, Speed) must be displayed on the left side of the screen (via `TowerDraftInfo`).
 - **Micro-Animations:** UI components (like Notifications) should include smooth transitions (Fade, Slide) using task-based loops or Fusion's spring/tween systems when available.
 
 ### 3. Workflow & Organization
+- **Tower Identification:** All towers MUST be tracked using a unique UUID (assigned via `HttpService:GenerateGUID`) stored as a `TowerId` attribute. NEVER use instance references for critical network requests like upgrades or sales.
+- **World UI:** All placed towers must feature a `BillboardGui` (via `WorldTowerInfo`). This UI MUST have a `MaxDistance` of 60 studs to ensure optimal performance and clarity.
+- **Sell Policy:** Tower sales MUST refund exactly 70% of the total investment (Original Cost + all Upgrade Costs). Refund calculations must be performed on the server for security.
 - **Stories Location:** All UI preview stories MUST reside in `src/ServerScriptService/Stories/`.
+- **Spec Maintenance:** The `project_spec.md` MUST be updated every time a new feature, network event, or architectural change is implemented. This document is the single source of truth.
 - **Logic Security:** Gameplay-critical combat logic (Damage, Range, FireRate) MUST be stored in `src/ServerScriptService/TowerLogic/` and handled exclusively on the server.
 - **Asset Replication:** Server logic should be stripped from models in `ReplicatedStorage` to prevent client-side script inspection.
 
