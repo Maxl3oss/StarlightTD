@@ -137,10 +137,15 @@ function TowerSystem:UpdateTowers(dt: number)
 		local towerPos = tower.Instance:GetPivot().Position
 
 		-- Find target if needed
+		local currentTarget = tower.Target
+		local targetPos = if currentTarget and currentTarget:FindFirstChild("HumanoidRootPart")
+			then currentTarget.HumanoidRootPart.Position
+			else if currentTarget then currentTarget:GetPivot().Position else nil
+
 		if
-			not tower.Target
-			or not tower.Target.Parent
-			or getDistance2D(tower.Target:GetPivot().Position, towerPos) > tower.Config.Range
+			not currentTarget
+			or not currentTarget.Parent
+			or (targetPos and getDistance2D(targetPos, towerPos) > tower.Config.Range)
 		then
 			tower.Target = self:GetClosestTarget(towerPos, tower.Config.Range)
 		end
@@ -159,6 +164,16 @@ function TowerSystem:FireTower(tower)
 		return
 	end
 
+	-- Check for custom modular logic inside the Tower folder
+	local logicModule = tower.Instance:FindFirstChild("Logic")
+	if logicModule and logicModule:IsA("ModuleScript") then
+		local success, Logic = pcall(require, logicModule)
+		if success and Logic.Fire then
+			Logic.Fire(tower, target, WaveSystem)
+			return
+		end
+	end
+
 	local config = tower.Config
 	local towerPos = tower.Instance:GetPivot().Position
 	local centerPos = if config.AoECenter == "Tower" then towerPos else target:GetPivot().Position
@@ -172,7 +187,7 @@ function TowerSystem:FireTower(tower)
 			if mob:GetAttribute("IsMob") then
 				local humanoid = mob:FindFirstChildOfClass("Humanoid")
 				local hrp = mob:FindFirstChild("HumanoidRootPart")
-				
+
 				if humanoid and hrp then
 					local dist = getDistance2D(hrp.Position, centerPos)
 					if dist <= radius then

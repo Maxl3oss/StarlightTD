@@ -29,7 +29,10 @@ function VfxSystem:Start()
 
 			local style = config.VfxStyle
 			if style == "MeleePulse" then
-				self:CreateMeleePulse(startPos, config.BlastRadius or 12)
+				self:CreateMeleePulse(data.To, config.BlastRadius or 12)
+				if data.TowerInstance and data.TowerName == "Potato" then
+					self:AnimatePotato(data.TowerInstance, config.FireRate or 0.8)
+				end
 			elseif style == "Arrow" then
 				self:CreateArrow(startPos, data.To)
 			elseif style == "Meteor" then
@@ -112,25 +115,54 @@ function VfxSystem:CreateMeteor(targetPos: Vector3, radius: number)
 	end)
 end
 
+local Debris = game:GetService("Debris")
+
 function VfxSystem:CreateMeleePulse(position: Vector3, radius: number)
+	-- Shockwave Disc (Faint & Ghostly)
 	local part = Instance.new("Part")
-	part.Size = Vector3.new(1, 1, 1)
-	part.Shape = Enum.PartType.Ball
+	part.Size = Vector3.new(0.05, radius * 1.5, radius * 1.5)
+	part.Shape = Enum.PartType.Cylinder
 	part.Anchored = true
 	part.CanCollide = false
 	part.Position = position
-	part.Color = Color3.fromRGB(236, 240, 241)
+	part.CFrame = CFrame.new(part.Position) * CFrame.Angles(0, 0, math.rad(90))
+
+	part.Color = Color3.fromRGB(255, 0, 0)
 	part.Material = Enum.Material.Neon
-	part.Transparency = 0.5
+	part.Transparency = 0.7 -- Fainter visibility
 	part.Parent = Workspace
 
-	local tween = TweenService:Create(part, TweenInfo.new(0.4, Enum.EasingStyle.QuartOut), {
-		Size = Vector3.new(radius * 2, radius * 2, radius * 2),
+	-- Safe cleanup
+	Debris:AddItem(part, 0.4)
+
+	local tween = TweenService:Create(part, TweenInfo.new(0.2, Enum.EasingStyle.QuartOut), {
+		Size = Vector3.new(0.05, radius * 2.8, radius * 2.8),
 		Transparency = 1,
 	})
 	tween:Play()
-	tween.Completed:Connect(function()
-		part:Destroy()
+end
+
+function VfxSystem:AnimatePotato(model: Instance, fireRate: number)
+	local originalCFrame = model:GetPivot()
+	local jumpHeight = 2
+	local jumpCFrame = originalCFrame * CFrame.new(0, jumpHeight, 0)
+
+	-- Scale animation to 50% of fire rate to ensure it finishes before next shot
+	local totalAnimTime = math.min(fireRate * 0.5, 0.4)
+	local jumpTime = totalAnimTime * 0.4
+	local fallTime = totalAnimTime * 0.6
+
+	local jump = TweenService:Create(model, TweenInfo.new(jumpTime, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+		CFrame = jumpCFrame,
+	})
+
+	jump:Play()
+	jump.Completed:Connect(function()
+		local fall =
+			TweenService:Create(model, TweenInfo.new(fallTime, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out), {
+				CFrame = originalCFrame,
+			})
+		fall:Play()
 	end)
 end
 
