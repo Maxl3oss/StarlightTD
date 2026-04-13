@@ -8,9 +8,10 @@
 ## Technical Stack
 - **Game Engine:** Roblox
 - **Language:** Luau
-- **Project Management:** Rojo (Visual Studio Code workflow)
-- **Networking:** [NetRay](https://github.com/Maxl3oss/NetRay) (v1.1.5 or later) - A high-performance networking library.
-- **UI Framework:** Fusion v0.3 (State-management driven UI - Scoped Syntax)
+- **Project Management:** [Argon](https://github.com/argon-rbx/argon) (Visual Studio Code workflow)
+- **Data Store:** [ProfileStore](https://github.com/MadStudioRoblox/ProfileStore) (Updated 25 Mar 2026) - A high-performance data store library.
+- **Networking:** [NetRay](https://github.com/AstaWasTaken/NetRay) (v1.1.5) - A high-performance networking library.
+- **UI Framework:** [Fusion](https://github.com/dphfox/Fusion) v0.3 (State-management driven UI - Scoped Syntax)
 - **Architecture:** System-based framework with modular tower logic.
 
 ---
