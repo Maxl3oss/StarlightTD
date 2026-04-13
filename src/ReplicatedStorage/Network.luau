@@ -106,4 +106,10 @@ return {
 			TowerInstance = NetType.Instance,
 		},
 	}),
+	Notify = getOrRegisterEvent("Notify", {
+		typeDefinition = {
+			Message = NetType.String,
+			Type = NetType.String, -- "Info", "Error", "Success"
+		},
+	}),
 }

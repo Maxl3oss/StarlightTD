@@ -8,8 +8,9 @@ PhysicsService:RegisterCollisionGroup("Players")
 
 function PhysicsSystemGroup:Init()
 	PhysicsService:CollisionGroupSetCollidable("Mobs", "Players", false)
-	PhysicsService:CollisionGroupSetCollidable("Towers", "Players", false)
 	PhysicsService:CollisionGroupSetCollidable("Mobs", "Mobs", false)
+	PhysicsService:CollisionGroupSetCollidable("Towers", "Mobs", false)
+	PhysicsService:CollisionGroupSetCollidable("Towers", "Players", false)
 
 	Players.PlayerAdded:Connect(function(player)
 		player.CharacterAdded:Connect(function(character)

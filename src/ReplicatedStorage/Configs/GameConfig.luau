@@ -4,6 +4,7 @@
 local GameConfig = {
 	-- UI
 	EnableLoadingScreen = false,
+	MaxTowers = 25,
 }
 
 return GameConfig

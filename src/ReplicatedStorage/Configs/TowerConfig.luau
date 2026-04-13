@@ -13,6 +13,7 @@ return {
 		AoECenter = "Tower",
 		BlastRadius = 12,
 		VfxStyle = "MeleePulse",
+		MaxInstances = 6,
 	},
 	Archer = {
 		Name = "Archer",
@@ -27,6 +28,7 @@ return {
 		ProjectileSpeed = 150,
 		AttackType = "Single",
 		VfxStyle = "Arrow",
+		MaxInstances = 4,
 	},
 	Mage = {
 		Name = "Mage",
@@ -43,5 +45,6 @@ return {
 		AoECenter = "Target",
 		BlastRadius = 15,
 		VfxStyle = "Meteor",
+		MaxInstances = 2,
 	},
 }

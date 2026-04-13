@@ -12,6 +12,7 @@ local TowerConfig = require(RS.Configs.TowerConfig)
 local EnemyConfig = require(SS.Configs.EnemyConfig)
 local Network = require(RS.Network)
 local WaveSystem = require(SS.Systems.WaveSystem)
+local GameConfig = require(SS.Configs.GameConfig)
 
 -- Constants
 local TARGET_INTERVAL = 0.5
@@ -52,8 +53,37 @@ function TowerSystem:HandlePlaceTower(player: Player, towerName: string, positio
 		return
 	end
 
-	-- Check coins (Assuming WaveSystem has a way to check/spend coins)
+	-- Check Max Towers (Global)
+	local currentTowerCount = #self.towers
+	if currentTowerCount >= (GameConfig.MaxTowers or 25) then
+		Network.Notify:FireClient(player, {
+			Message = "Global tower limit reached!",
+			Type = "Error",
+		})
+		return
+	end
+
+	-- Check Max Towers (Per Type)
+	local typeCount = 0
+	for _, t in ipairs(self.towers) do
+		if t.Config.Name == towerName then
+			typeCount += 1
+		end
+	end
+	if typeCount >= (config.MaxInstances or 99) then
+		Network.Notify:FireClient(player, {
+			Message = `Max {towerName} towers reached! ({config.MaxInstances})`,
+			Type = "Error",
+		})
+		return
+	end
+
+	-- Check coins
 	if WaveSystem.coins < config.Cost then
+		Network.Notify:FireClient(player, {
+			Message = "Not enough coins!",
+			Type = "Error",
+		})
 		print("Not enough coins to place " .. towerName)
 		return
 	end
@@ -65,7 +95,7 @@ function TowerSystem:HandlePlaceTower(player: Player, towerName: string, positio
 	rayParams.FilterDescendantsInstances = { if land then land else Workspace }
 
 	local rayResult = Workspace:Raycast(position + Vector3.new(0, 5, 0), Vector3.new(0, -10, 0), rayParams)
-	if not rayResult or not land or not rayResult.Instance:IsDescendantOf(land) then
+	if not rayResult or not land or not (rayResult.Instance == land or rayResult.Instance:IsDescendantOf(land)) then
 		print(`Invalid placement for {towerName} - Not on Land`)
 		return
 	end
@@ -92,7 +122,32 @@ function TowerSystem:HandlePlaceTower(player: Player, towerName: string, positio
 		yOffset = towerModel.Size.Y / 2
 	end
 
-	towerModel:PivotTo(CFrame.new(position + Vector3.new(0, yOffset, 0)))
+	local targetCFrame = CFrame.new(position + Vector3.new(0, yOffset, 0))
+
+	-- Server-side Overlap Check (Security)
+	local overlapParams = OverlapParams.new()
+	overlapParams.FilterType = Enum.RaycastFilterType.Include
+	overlapParams.FilterDescendantsInstances = { self.towersFolder }
+	local overlapParts = Workspace:GetPartBoundsInBox(targetCFrame, towerModel:GetExtentsSize(), overlapParams)
+
+	if #overlapParts > 0 then
+		print(`Invalid placement for {towerName} - Overlapping another tower`)
+		towerModel:Destroy()
+		return
+	end
+
+	towerModel:PivotTo(targetCFrame)
+
+	-- Set Collision Group
+	for _, obj in ipairs(towerModel:GetDescendants()) do
+		if obj:IsA("BasePart") then
+			obj.CollisionGroup = "Towers"
+		end
+	end
+	if towerModel:IsA("BasePart") then
+		towerModel.CollisionGroup = "Towers"
+	end
+
 	towerModel.Parent = self.towersFolder
 
 	-- Deduct coins
@@ -175,8 +230,10 @@ function TowerSystem:FireTower(tower)
 		return
 	end
 
-	-- Check for custom modular logic inside the Tower folder
-	local logicModule = tower.Instance:FindFirstChild("Logic")
+	-- Check for custom modular logic inside ServerScriptService.TowerLogic
+	local towerLogicFolder = SS:FindFirstChild("TowerLogic")
+	local logicModule = towerLogicFolder and towerLogicFolder:FindFirstChild(tower.Config.Name)
+
 	if logicModule and logicModule:IsA("ModuleScript") then
 		local success, Logic = pcall(require, logicModule)
 		if success and Logic.Fire then

@@ -7,6 +7,7 @@ local GameConfig = {
 	BaseMaxHealth = 100,
 	StartingCoins = 300,
 	VictoryCashReward = 100,
+	MaxTowers = 25,
 }
 
 return GameConfig

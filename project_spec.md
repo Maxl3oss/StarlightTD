@@ -10,7 +10,7 @@
 - **Language:** Luau
 - **Project Management:** Rojo (Visual Studio Code workflow)
 - **Networking:** [NetRay](https://github.com/Maxl3oss/NetRay) (v1.1.5 or later) - A high-performance networking library.
-- **UI Framework:** Fusion (State-management driven UI)
+- **UI Framework:** Fusion v0.3 (State-management driven UI - Scoped Syntax)
 - **Architecture:** System-based framework with modular tower logic.
 
 ---
@@ -27,22 +27,28 @@
 - **Waves:** Config-driven spawning (`WaveConfig`).
 - **Pathfinding:** Waypoint-based movement through `Workspace.Base.Waypoints`.
 - **Base Logic:** Health management and game over/victory transitions.
-- **Currency:** Manages "Coins" (game-session currency) and interfaces with `ProfileStoreSystem` for "Cash" (persistent currency).
+- **Currency:** Manages "Coins" (game-session currency).
 
 ### 3. Tower System (`TowerSystem.luau`)
 - **Placement:** 
     - **Validation:** Towers can ONLY be placed on `Workspace.Base.Land`.
-    - **Visuals:** Ghost models use a dynamic color system (Red when invalid, original/white when valid).
+    - **Collision:** Towers are assigned to the `Towers` collision group.
+    - **Anti-Stacking:** Overlap checks (using `GetPartBoundsInBox`) prevent towers from being placed on top of each other.
+    - **Limits:** 
+        - Max global tower limit (Default: 25).
+        - Max per-type tower limit (e.g., Potato: 6, Archer: 4, Mage: 2).
+    - **Visuals:** Ghost models use a dynamic color system (Red when invalid/overlapping/limit reached).
 - **Combat Logic:** 
     - **Levels:** Towers support 5 levels of progression. Stats are fetched from `tower.Config.Levels[tower.Level]`.
     - **Targeting:** 2D distance calculation to find the closest "Mob".
-    - **Modular Logic:** Individual towers can have a `Logic` ModuleScript inside their model to override/extend attack behaviors.
+    - **Centralized Logic:** Combat logic is kept secure in `ServerScriptService/TowerLogic`.
 - **VFX Synchronization:** Broadcasts `TowerShoot` events to all clients for visual rendering.
 
 ### 4. Client Systems
 - **VFX System:** Listens for `TowerShoot` events to render polished effects.
-- **Placement System:** Handles client-side validation logic and real-time color feedback for the placement ghost.
-- **UI Systems:** `WaveClientSystem`, `TowerUISystem`, and `HealthBarSystem` handle the game HUD using Fusion.
+- **Placement System:** Handles client-side validation logic and real-time color feedback.
+- **UI Systems:** `TowerUISystem`, `WaveClientSystem`, `NotificationUISystem`, and `HealthBarSystem` handle the game HUD using Fusion.
+- **Notification System:** Displays real-time alerts (e.g., "Not enough coins", "Max towers reached").
 
 ---
 
@@ -67,18 +73,23 @@
 ---
 
 ## Operational Workflow & Security
-1. **Server Source of Truth:** All damage and spending must happen on the Server.
-2. **Asset Sanitization:** Never replicate server-side scripts (Logic) to `ReplicatedStorage`.
-3. **Validation Parity:** Both Client and Server must validate placement to ensure a smooth UX and block exploits.
-4. **2D Combat:** Use `Vector2` (X, Z) for distance checks to avoid verticality issues in targeting.
+1. **Server Source of Truth:** All damage, spending, and limits happen on the Server.
+2. **Internal Logic:** Keep tower combat scripts in `ServerScriptService/TowerLogic` to ensure they never enter the Workspace.
+3. **Validation Parity:** Both Client and Server must validate placement and gameplay rules.
+4. **Collision Groups:** Maintain proper collision group layers (`Mobs`, `Towers`, `Players`).
+5. **UI Development:** Always create a `.story.luau` file (UI Labs style) in `src/ServerScriptService/Stories` for every new UI component to enable isolated testing.
 
 ---
 
 ## Project Status
 - [x] Foundation (Framework/Network)
 - [x] Placement Validation (On Land only)
+- [x] Anti-Stacking System (Overlap prevention)
+- [x] Tower Collision Groups
 - [x] Tower Level Progression (Levels 1-5)
-- [x] Security (Logic Stripping)
+- [x] Max Tower Limit (Enforced on Server)
+- [x] Security (Logic Stripping & Centralized TowerLogic)
+- [x] Notification UI System
 - [x] Core Gameplay (Waves/Placement/Combat)
 - [ ] Upgrade UI (Allowing players to level up towers)
 - [ ] Sound Design

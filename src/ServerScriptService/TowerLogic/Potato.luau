@@ -6,9 +6,9 @@ local EnemyConfig = require(SS.Configs.EnemyConfig)
 
 local Logic = {}
 
-function Logic.Fire(tower, _, waveSystem)
+function Logic.Fire(tower, target, waveSystem)
 	local config = tower.Config
-	local levelConfig = config.Levels[tower.Level]
+	local levelConfig = config.Levels[tower.Level] 
 	local towerPos = tower.Instance:GetPivot().Position
 	local radius = levelConfig.Range
 	local hitCount = 0

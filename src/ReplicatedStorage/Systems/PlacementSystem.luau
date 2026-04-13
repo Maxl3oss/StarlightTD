@@ -114,9 +114,10 @@ function PlacementSystem:HandleSelection()
 	local result = Workspace:Raycast(mouseRay.Origin, mouseRay.Direction * RAY_DISTANCE, raycastParams)
 	if result then
 		local model = result.Instance:FindFirstAncestorOfClass("Model")
-		if model and TowerConfig[model.Name] then
+		local config = model and TowerConfig[model.Name]
+		if model and config then
 			self.selectedTower = model
-			self:ShowRange(model:GetPivot().Position, TowerConfig[model.Name].Range)
+			self:ShowRange(model:GetPivot().Position, config.Levels[1].Range)
 			return
 		end
 	end
@@ -209,7 +210,7 @@ function PlacementSystem:UpdateGhost()
 
 		-- Validation Logic: Must be on Workspace/Base/Land
 		local land = Workspace:FindFirstChild("Base") and Workspace.Base:FindFirstChild("Land")
-		self.isValid = hitInstance and land and hitInstance:IsDescendantOf(land)
+		self.isValid = hitInstance and land and (hitInstance == land or hitInstance:IsDescendantOf(land))
 
 		self:SetGhostColor(self.isValid)
 
@@ -225,10 +226,23 @@ function PlacementSystem:UpdateGhost()
 		local targetCFrame = CFrame.new(mousePos + Vector3.new(0, yOffset, 0)) * CFrame.Angles(0, yRotation, 0)
 		self.ghostModel:PivotTo(targetCFrame)
 
-		-- Show range
+		-- Overlap check: Prevent towers from being placed on top of each other
+		if self.isValid then
+			local overlapParams = OverlapParams.new()
+			overlapParams.FilterType = Enum.RaycastFilterType.Include
+			local towersFolder = Workspace:FindFirstChild("Towers")
+			overlapParams.FilterDescendantsInstances = if towersFolder then { towersFolder } else {}
+
+			local parts = Workspace:GetPartBoundsInBox(targetCFrame, self.ghostModel:GetExtentsSize(), overlapParams)
+			if #parts > 0 then
+				self.isValid = false
+			end
+		end
+
+		self:SetGhostColor(self.isValid)
 		local config = TowerConfig[self.currentTowerName]
 		if config then
-			self:ShowRange(mousePos, config.Range)
+			self:ShowRange(mousePos, config.Levels[1].Range)
 		end
 	else
 		self.isValid = false
@@ -257,8 +271,9 @@ function PlacementSystem:UpdateHover()
 	local result = Workspace:Raycast(mouseRay.Origin, mouseRay.Direction * RAY_DISTANCE, raycastParams)
 	if result then
 		local model = result.Instance:FindFirstAncestorOfClass("Model")
-		if model and TowerConfig[model.Name] then
-			self:ShowRange(model:GetPivot().Position, TowerConfig[model.Name].Range)
+		local config = model and TowerConfig[model.Name]
+		if model and config then
+			self:ShowRange(model:GetPivot().Position, config.Levels[1].Range)
 			return
 		end
 	end
