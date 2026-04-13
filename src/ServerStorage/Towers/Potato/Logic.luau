@@ -1,15 +1,16 @@
 local RS = game:GetService("ReplicatedStorage")
+local SS = game:GetService("ServerScriptService")
 local Workspace = game:GetService("Workspace")
 local Network = require(RS.Network)
-local EnemyConfig = require(RS.ServerScriptService.Configs.EnemyConfig)
-local TowerConfig = require(RS.ReplicatedStorage.Configs.TowerConfig)
+local EnemyConfig = require(SS.Configs.EnemyConfig)
 
 local Logic = {}
 
-function Logic.Fire(tower, target, waveSystem)
+function Logic.Fire(tower, _, waveSystem)
 	local config = tower.Config
+	local levelConfig = config.Levels[tower.Level]
 	local towerPos = tower.Instance:GetPivot().Position
-	local radius = config.Range or 12 -- Use Range to match the UI indicator
+	local radius = levelConfig.Range
 	local hitCount = 0
 
 	-- 2D Distance Check (XZ Plane)
@@ -26,13 +27,13 @@ function Logic.Fire(tower, target, waveSystem)
 			if humanoid and hrp then
 				local dist = getDistance2D(hrp.Position, towerPos)
 				if dist <= radius then
-					humanoid:TakeDamage(config.Damage)
+					humanoid:TakeDamage(levelConfig.Damage)
 
 					-- Reward logic
 					local enemyCfg = EnemyConfig[mob.Name]
 					if enemyCfg then
 						local rewardPerDamage = enemyCfg.Reward / enemyCfg.Health
-						waveSystem:AddCoins(config.Damage * rewardPerDamage)
+						waveSystem:AddCoins(levelConfig.Damage * rewardPerDamage)
 					end
 					hitCount += 1
 				end

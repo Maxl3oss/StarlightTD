@@ -23,6 +23,7 @@ function PlacementSystem:Init()
 	self.ghostModel = nil
 	self.targetPosition = nil
 	self.selectedTower = nil
+	self.isValid = false
 
 	self.rangeCircle = self:CreateRangeCircle()
 end
@@ -167,6 +168,31 @@ function PlacementSystem:StartPlacement(towerName: string)
 	end
 
 	self.ghostModel.Parent = Workspace
+	self.isValid = false
+end
+
+function PlacementSystem:SetGhostColor(isValid: boolean)
+	if not self.ghostModel then
+		return
+	end
+
+	local color = if isValid then Color3.fromRGB(255, 255, 255) else Color3.fromRGB(255, 0, 0)
+	local transparency = if isValid then 0.5 else 0.7
+
+	if self.ghostModel:IsA("BasePart") then
+		self.ghostModel.Color = color
+		self.ghostModel.Transparency = transparency
+	end
+
+	for _, descendant in ipairs(self.ghostModel:GetDescendants()) do
+		if descendant:IsA("BasePart") then
+			descendant.Color = color
+			descendant.Transparency = transparency
+		end
+	end
+
+	-- Update range circle color too
+	self.rangeCircle.Color = if isValid then Color3.fromRGB(0, 255, 0) else Color3.fromRGB(255, 0, 0)
 end
 
 function PlacementSystem:UpdateGhost()
@@ -174,9 +200,18 @@ function PlacementSystem:UpdateGhost()
 		return
 	end
 
-	local mousePos = self:GetMouseWorldPosition()
-	if mousePos then
+	local result = self:GetPlacementResult()
+	if result then
+		local mousePos = result.Position
+		local hitInstance = result.Instance
+
 		self.targetPosition = mousePos
+
+		-- Validation Logic: Must be on Workspace/Base/Land
+		local land = Workspace:FindFirstChild("Base") and Workspace.Base:FindFirstChild("Land")
+		self.isValid = hitInstance and land and hitInstance:IsDescendantOf(land)
+
+		self:SetGhostColor(self.isValid)
 
 		local yOffset = 0
 		if self.ghostModel:IsA("Model") then
@@ -196,6 +231,8 @@ function PlacementSystem:UpdateGhost()
 			self:ShowRange(mousePos, config.Range)
 		end
 	else
+		self.isValid = false
+		self:SetGhostColor(false)
 		self:HideRange()
 	end
 end
@@ -229,18 +266,17 @@ function PlacementSystem:UpdateHover()
 	self:HideRange()
 end
 
-function PlacementSystem:GetMouseWorldPosition(): Vector3?
+function PlacementSystem:GetPlacementResult(): RaycastResult?
 	local mouseRay = self.mouse.UnitRay
 	local raycastParams = RaycastParams.new()
 	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 	raycastParams.FilterDescendantsInstances = { self.ghostModel, self.player.Character }
 
-	local result = Workspace:Raycast(mouseRay.Origin, mouseRay.Direction * RAY_DISTANCE, raycastParams)
-	return result and result.Position
+	return Workspace:Raycast(mouseRay.Origin, mouseRay.Direction * RAY_DISTANCE, raycastParams)
 end
 
 function PlacementSystem:ConfirmPlacement()
-	if not self.isPlacing or not self.currentTowerName or not self.targetPosition then
+	if not self.isPlacing or not self.currentTowerName or not self.targetPosition or not self.isValid then
 		return
 	end
 

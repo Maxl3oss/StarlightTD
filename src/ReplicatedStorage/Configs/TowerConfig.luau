@@ -2,9 +2,13 @@ return {
 	Potato = {
 		Name = "Potato",
 		Cost = 100,
-		Damage = 10,
-		Range = 12, -- Nearby
-		FireRate = 0.8,
+		Levels = {
+			[1] = { Damage = 10, Range = 12, FireRate = 0.8, UpgradeCost = 0 },
+			[2] = { Damage = 15, Range = 13, FireRate = 0.75, UpgradeCost = 150 },
+			[3] = { Damage = 22, Range = 14, FireRate = 0.7, UpgradeCost = 250 },
+			[4] = { Damage = 35, Range = 15, FireRate = 0.65, UpgradeCost = 450 },
+			[5] = { Damage = 55, Range = 17, FireRate = 0.55, UpgradeCost = 800 },
+		},
 		AttackType = "AoE",
 		AoECenter = "Tower",
 		BlastRadius = 12,
@@ -13,9 +17,13 @@ return {
 	Archer = {
 		Name = "Archer",
 		Cost = 150,
-		Damage = 25,
-		Range = 40, -- Long range
-		FireRate = 1.0,
+		Levels = {
+			[1] = { Damage = 25, Range = 40, FireRate = 1.0, UpgradeCost = 0 },
+			[2] = { Damage = 40, Range = 42, FireRate = 0.9, UpgradeCost = 200 },
+			[3] = { Damage = 65, Range = 45, FireRate = 0.8, UpgradeCost = 350 },
+			[4] = { Damage = 100, Range = 50, FireRate = 0.7, UpgradeCost = 600 },
+			[5] = { Damage = 160, Range = 60, FireRate = 0.5, UpgradeCost = 1200 },
+		},
 		ProjectileSpeed = 150,
 		AttackType = "Single",
 		VfxStyle = "Arrow",
@@ -23,9 +31,13 @@ return {
 	Mage = {
 		Name = "Mage",
 		Cost = 400,
-		Damage = 60,
-		Range = 25,
-		FireRate = 2.5,
+		Levels = {
+			[1] = { Damage = 60, Range = 25, FireRate = 2.5, UpgradeCost = 0 },
+			[2] = { Damage = 100, Range = 27, FireRate = 2.3, UpgradeCost = 500 },
+			[3] = { Damage = 160, Range = 30, FireRate = 2.1, UpgradeCost = 1000 },
+			[4] = { Damage = 280, Range = 35, FireRate = 1.8, UpgradeCost = 2000 },
+			[5] = { Damage = 500, Range = 40, FireRate = 1.5, UpgradeCost = 4500 },
+		},
 		ProjectileSpeed = 60,
 		AttackType = "AoE",
 		AoECenter = "Target",

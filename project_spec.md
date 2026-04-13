@@ -21,6 +21,7 @@
 - **Framework:** Custom system-based loader (`src/ReplicatedStorage/Framework`).
 - **Initialization:** `Server.luau` and `Client.luau` handle the lifecycle of systems.
 - **Systems:** Independent modules that handle specific game domains (e.g., `TowerSystem`, `WaveSystem`).
+- **Security:** `AssetSystem` strips server-side logic from tower models before they are replicated to the client for placement previews.
 
 ### 2. Wave & Enemy System (`WaveSystem.luau`)
 - **Waves:** Config-driven spawning (`WaveConfig`).
@@ -29,16 +30,18 @@
 - **Currency:** Manages "Coins" (game-session currency) and interfaces with `ProfileStoreSystem` for "Cash" (persistent currency).
 
 ### 3. Tower System (`TowerSystem.luau`)
-- **Placement:** Handles `PlaceTower` network events, deducting coins and spawning models.
+- **Placement:** 
+    - **Validation:** Towers can ONLY be placed on `Workspace.Base.Land`.
+    - **Visuals:** Ghost models use a dynamic color system (Red when invalid, original/white when valid).
 - **Combat Logic:** 
+    - **Levels:** Towers support 5 levels of progression. Stats are fetched from `tower.Config.Levels[tower.Level]`.
     - **Targeting:** 2D distance calculation to find the closest "Mob".
-    - **Standard Logic:** Single target and AoE (Area of Effect) damage.
     - **Modular Logic:** Individual towers can have a `Logic` ModuleScript inside their model to override/extend attack behaviors.
 - **VFX Synchronization:** Broadcasts `TowerShoot` events to all clients for visual rendering.
 
 ### 4. Client Systems
-- **VFX System:** Listens for `TowerShoot` and other events to render polished effects (beams, projectiles, explosions).
-- **Placement System:** Handles the client-side UI for dragging/snapping towers to the grid before confirming placement.
+- **VFX System:** Listens for `TowerShoot` events to render polished effects.
+- **Placement System:** Handles client-side validation logic and real-time color feedback for the placement ghost.
 - **UI Systems:** `WaveClientSystem`, `TowerUISystem`, and `HealthBarSystem` handle the game HUD using Fusion.
 
 ---
@@ -50,40 +53,33 @@
 {
     Name = string,
     Cost = number,
-    Damage = number,
-    Range = number,
-    FireRate = number,
+    Levels = {
+        [1] = { Damage = number, Range = number, FireRate = number, UpgradeCost = number },
+        -- ... up to level 5
+    },
     AttackType = "Single" | "AoE",
-    -- Optional modular fields
+    -- Optional fields
     BlastRadius = number,
     AoECenter = "Tower" | "Target",
 }
 ```
 
-### Enemy Configuration (`EnemyConfig.luau`)
-```lua
-{
-    Health = number,
-    WalkSpeed = number,
-    Damage = number, -- Damage to base
-    Reward = number, -- Coins granted on kill
-}
-```
-
 ---
 
-## Operational Workflow for AI
-1. **Always use NetRay for networking:** Follow the `getOrRegisterEvent` pattern in `Network.luau`.
-2. **Respect Modular Logic:** Before adding global tower behaviors, check if they should be in `TowerSystem.luau` or a specific tower's `Logic.luau`.
-3. **2D Combat:** Use `Vector2` (X, Z) for distance checks to avoid verticality issues in targeting.
-4. **VFX on Client:** Ensure all gameplay-affecting damage happens on the Server, while visual "wow" factors (beams, particles) are handled in `VfxSystem.luau`.
+## Operational Workflow & Security
+1. **Server Source of Truth:** All damage and spending must happen on the Server.
+2. **Asset Sanitization:** Never replicate server-side scripts (Logic) to `ReplicatedStorage`.
+3. **Validation Parity:** Both Client and Server must validate placement to ensure a smooth UX and block exploits.
+4. **2D Combat:** Use `Vector2` (X, Z) for distance checks to avoid verticality issues in targeting.
 
 ---
 
 ## Project Status
 - [x] Foundation (Framework/Network)
-- [x] Core Gameplay (Waves/Placement/Basic Combat)
-- [x] UI (Fusion implementation)
-- [ ] Polish (Sound, advanced VFX, specialized Tower Logic)
-- [ ] Map Variety
-- [ ] Progression Systems (Upgrades, Persistent Inventory)
+- [x] Placement Validation (On Land only)
+- [x] Tower Level Progression (Levels 1-5)
+- [x] Security (Logic Stripping)
+- [x] Core Gameplay (Waves/Placement/Combat)
+- [ ] Upgrade UI (Allowing players to level up towers)
+- [ ] Sound Design
+- [ ] Progression Systems (Persistent Inventory)

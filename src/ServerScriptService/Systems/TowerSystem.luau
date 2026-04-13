@@ -58,8 +58,17 @@ function TowerSystem:HandlePlaceTower(player: Player, towerName: string, positio
 		return
 	end
 
-	-- Simple collision check (optional, but good for base logic)
-	-- For a real TD, you'd use a grid or raycast check on the client
+	-- Validate placement surface (Must be on Workspace/Base/Land)
+	local land = Workspace:FindFirstChild("Base") and Workspace.Base:FindFirstChild("Land")
+	local rayParams = RaycastParams.new()
+	rayParams.FilterType = Enum.RaycastFilterType.Include
+	rayParams.FilterDescendantsInstances = { if land then land else Workspace }
+
+	local rayResult = Workspace:Raycast(position + Vector3.new(0, 5, 0), Vector3.new(0, -10, 0), rayParams)
+	if not rayResult or not land or not rayResult.Instance:IsDescendantOf(land) then
+		print(`Invalid placement for {towerName} - Not on Land`)
+		return
+	end
 
 	-- Place tower
 	local towerModel = self:GetTowerTemplate(towerName)
@@ -93,6 +102,7 @@ function TowerSystem:HandlePlaceTower(player: Player, towerName: string, positio
 	local towerData = {
 		Instance = towerModel,
 		Config = config,
+		Level = 1,
 		NextShotTime = 0,
 		Target = nil,
 	}
@@ -134,6 +144,7 @@ function TowerSystem:UpdateTowers(dt: number)
 	local now = tick()
 
 	for _, tower in ipairs(self.towers) do
+		local levelConfig = tower.Config.Levels[tower.Level]
 		local towerPos = tower.Instance:GetPivot().Position
 
 		-- Find target if needed
@@ -145,15 +156,15 @@ function TowerSystem:UpdateTowers(dt: number)
 		if
 			not currentTarget
 			or not currentTarget.Parent
-			or (targetPos and getDistance2D(targetPos, towerPos) > tower.Config.Range)
+			or (targetPos and getDistance2D(targetPos, towerPos) > levelConfig.Range)
 		then
-			tower.Target = self:GetClosestTarget(towerPos, tower.Config.Range)
+			tower.Target = self:GetClosestTarget(towerPos, levelConfig.Range)
 		end
 
 		-- Attack
 		if tower.Target and now >= tower.NextShotTime then
 			self:FireTower(tower)
-			tower.NextShotTime = now + tower.Config.FireRate
+			tower.NextShotTime = now + levelConfig.FireRate
 		end
 	end
 end
@@ -175,6 +186,7 @@ function TowerSystem:FireTower(tower)
 	end
 
 	local config = tower.Config
+	local levelConfig = config.Levels[tower.Level]
 	local towerPos = tower.Instance:GetPivot().Position
 	local centerPos = if config.AoECenter == "Tower" then towerPos else target:GetPivot().Position
 
@@ -191,31 +203,31 @@ function TowerSystem:FireTower(tower)
 				if humanoid and hrp then
 					local dist = getDistance2D(hrp.Position, centerPos)
 					if dist <= radius then
-						humanoid:TakeDamage(config.Damage)
+						humanoid:TakeDamage(levelConfig.Damage)
 
 						-- Reward logic
 						local enemyCfg = EnemyConfig[mob.Name]
 						if enemyCfg then
 							local rewardPerDamage = enemyCfg.Reward / enemyCfg.Health
-							WaveSystem:AddCoins(config.Damage * rewardPerDamage)
+							WaveSystem:AddCoins(levelConfig.Damage * rewardPerDamage)
 						end
 						hitCount += 1
 					end
 				end
 			end
 		end
-		print(`[TowerSystem] {config.Name} AoE at {config.AoECenter} hit {hitCount} targets (Radius: {radius})`)
+		print(`[TowerSystem] {config.Name} (Lv {tower.Level}) AoE hit {hitCount} targets (DMG: {levelConfig.Damage})`)
 	else
 		-- Single Target Damage
 		local humanoid = target:FindFirstChildOfClass("Humanoid")
 		if humanoid then
-			humanoid:TakeDamage(config.Damage)
+			humanoid:TakeDamage(levelConfig.Damage)
 
 			-- Gradual Reward Logic
 			local enemyCfg = EnemyConfig[target.Name]
 			if enemyCfg then
 				local rewardPerDamage = enemyCfg.Reward / enemyCfg.Health
-				WaveSystem:AddCoins(config.Damage * rewardPerDamage)
+				WaveSystem:AddCoins(levelConfig.Damage * rewardPerDamage)
 			end
 		end
 	end
