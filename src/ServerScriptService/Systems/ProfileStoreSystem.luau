@@ -14,7 +14,7 @@ local PlayerProfileStore = ProfileStore.New("PlayerStore", require(SS.Configs.Pr
 local Profiles: { [Player]: typeof(PlayerProfileStore:StartSessionAsync()) } = {}
 
 -- Debugging
-local DEBUG = true
+local DEBUG = false
 local function print(msg: string)
 	if DEBUG then
 		warn(`[ProfileStoreSystem]: {msg}`)

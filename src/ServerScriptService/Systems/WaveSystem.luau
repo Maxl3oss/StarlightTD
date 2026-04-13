@@ -32,6 +32,7 @@ local EnemyConfig = require(SS.Configs.EnemyConfig)
 local GameConfig = require(SS.Configs.GameConfig)
 local Network = require(RS.Network)
 local ProfileStoreSystem = require(SS.Systems.ProfileStoreSystem)
+local Helper = require(RS.Utils.Helper)
 
 -- Constants
 local COUNTDOWN_DURATION = 10
@@ -46,7 +47,7 @@ local function log(msg: string, level: ("info" | "warn" | "error")?)
 	if not DEBUG then
 		return
 	end
-	local prefix = "[WaveSystem]"
+	local prefix = "[WaveSystem]:"
 	if level == "warn" then
 		warn(`{prefix} {msg}`)
 	elseif level == "error" then
@@ -56,13 +57,6 @@ local function log(msg: string, level: ("info" | "warn" | "error")?)
 	end
 end
 
-local function setCollisionGroup(model: Instance, group: string)
-	for _, obj in ipairs(model:GetDescendants()) do
-		if obj:IsA("BasePart") then
-			obj.CollisionGroup = group
-		end
-	end
-end
 
 -- ========== Framework Lifecycle ==========
 
@@ -247,8 +241,15 @@ end
 
 function WaveSystem:AddCoins(amount: number)
 	self.coins += amount
-	self:BroadcastCoins()
-	log(`Added {amount} coins. Total: {self.coins}`, "info")
+
+	-- Throttle broadcasting to prevent network spam during AoE hits
+	if not self._coinsUpdatePending then
+		self._coinsUpdatePending = true
+		task.defer(function()
+			self._coinsUpdatePending = false
+			self:BroadcastCoins()
+		end)
+	end
 end
 
 function WaveSystem:StartCountdown(waveNumber: number)
@@ -389,7 +390,7 @@ function WaveSystem:SpawnEnemy(enemyName: string)
 	end
 
 	local mob = template:Clone() :: Model
-	setCollisionGroup(mob, "Mobs")
+	Helper.setCollisionGroup(mob, "Mobs")
 
 	mob:SetAttribute("IsMob", true)
 	mob:SetAttribute("Killed", false)
@@ -481,7 +482,7 @@ end
 function WaveSystem:RunWave(waveNumber: number)
 	local wave = WaveConfig[waveNumber]
 	if not wave or self.isGameOver then
-		warn(`Cannot run wave {waveNumber}`)
+		log(`Cannot run wave {waveNumber}`, "warn")
 		self.isWaveRunning = false
 		self:BroadcastState()
 		return

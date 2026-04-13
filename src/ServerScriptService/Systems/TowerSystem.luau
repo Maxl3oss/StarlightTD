@@ -13,12 +13,13 @@ local EnemyConfig = require(SS.Configs.EnemyConfig)
 local Network = require(RS.Network)
 local GameConfig = require(SS.Configs.GameConfig)
 local HttpService = game:GetService("HttpService")
+local Helper = require(RS.Utils.Helper)
 
 -- Constants
 local TARGET_INTERVAL = 0.5
 
 -- Debugging
-local DEBUG = true
+local DEBUG = false
 local function print(msg: string)
 	if DEBUG then
 		warn(`[TowerSystem]: {msg}`)
@@ -39,7 +40,9 @@ function TowerSystem:Init(framework)
 	-- Upgrade Request
 	Network.RequestUpgrade:OnEvent(function(requestingPlayer, data)
 		local waveSystem = self.framework.systems["WaveSystem"]
-		if not waveSystem then return end
+		if not waveSystem then
+			return
+		end
 
 		local towerData = nil
 		for _, t in ipairs(self.towers) do
@@ -49,7 +52,9 @@ function TowerSystem:Init(framework)
 			end
 		end
 
-		if not towerData then return end
+		if not towerData then
+			return
+		end
 		local config = towerData.Config
 		local currentLevel = towerData.Level
 		local nextLevel = currentLevel + 1
@@ -61,7 +66,10 @@ function TowerSystem:Init(framework)
 
 		local upgradeCost = config.Levels[currentLevel].UpgradeCost
 		if waveSystem.coins < upgradeCost then
-			Network.Notify:FireClient(requestingPlayer, { Message = `Not enough coins! (Need {upgradeCost})`, Type = "Error" })
+			Network.Notify:FireClient(
+				requestingPlayer,
+				{ Message = `Not enough coins! (Need {upgradeCost})`, Type = "Error" }
+			)
 			return
 		end
 
@@ -69,15 +77,20 @@ function TowerSystem:Init(framework)
 		waveSystem:AddCoins(-upgradeCost)
 		towerData.Level = nextLevel
 		towerData.Instance:SetAttribute("Level", nextLevel)
-		
+
 		warn(`[TowerSystem] Upgrade: {config.Name} -> Lv {nextLevel} (Player: {requestingPlayer.Name})`)
-		Network.Notify:FireClient(requestingPlayer, { Message = `{config.Name} upgraded to Level {nextLevel}!`, Type = "Success" })
+		Network.Notify:FireClient(
+			requestingPlayer,
+			{ Message = `{config.Name} upgraded to Level {nextLevel}!`, Type = "Success" }
+		)
 	end)
 
 	-- Sell Request
 	Network.RequestSell:OnEvent(function(player, data)
 		local waveSystem = self.framework.systems["WaveSystem"]
-		if not waveSystem then return end
+		if not waveSystem then
+			return
+		end
 
 		local foundIdx, towerData = nil, nil
 		for i, t in ipairs(self.towers) do
@@ -87,7 +100,9 @@ function TowerSystem:Init(framework)
 			end
 		end
 
-		if not towerData then return end
+		if not towerData then
+			return
+		end
 
 		-- Calculate Refund (70% total investment)
 		local totalInvested = towerData.Config.Cost
@@ -98,13 +113,18 @@ function TowerSystem:Init(framework)
 
 		-- Execute Sell
 		waveSystem:AddCoins(refundAmount)
-		if towerData.Instance then towerData.Instance:Destroy() end
+		if towerData.Instance then
+			towerData.Instance:Destroy()
+		end
 		table.remove(self.towers, foundIdx)
 
 		-- Broadcast & Notify
 		Network.TowerRemoved:FireAllClients({ TowerId = data.TowerId })
-		warn(`[TowerSystem] Sell: {towerData.Config.Name} (+{refundAmount} Coins)`)
-		Network.Notify:FireClient(player, { Message = `{towerData.Config.Name} sold for {refundAmount} coins!`, Type = "Success" })
+		print(`[TowerSystem] Sell: {towerData.Config.Name} (+{refundAmount} Coins)`)
+		Network.Notify:FireClient(
+			player,
+			{ Message = `{towerData.Config.Name} sold for {refundAmount} coins!`, Type = "Success" }
+		)
 	end)
 end
 
@@ -263,9 +283,6 @@ function TowerSystem:GetTowerTemplate(name: string): Model?
 	return towersFolder:FindFirstChild(name)
 end
 
-local function getDistance2D(p1: Vector3, p2: Vector3)
-	return (Vector2.new(p1.X, p1.Z) - Vector2.new(p2.X, p2.Z)).Magnitude
-end
 
 function TowerSystem:GetClosestTarget(position: Vector3, range: number): Model?
 	local closestDist = range
@@ -273,7 +290,7 @@ function TowerSystem:GetClosestTarget(position: Vector3, range: number): Model?
 
 	for _, mob in ipairs(Workspace:GetChildren()) do
 		if mob:GetAttribute("IsMob") and mob:FindFirstChild("HumanoidRootPart") then
-			local dist = getDistance2D(mob.HumanoidRootPart.Position, position)
+			local dist = Helper.getDistance2D(mob.HumanoidRootPart.Position, position)
 			if dist < closestDist then
 				closestDist = dist
 				closestTarget = mob
@@ -300,7 +317,7 @@ function TowerSystem:UpdateTowers(dt: number)
 		if
 			not currentTarget
 			or not currentTarget.Parent
-			or (targetPos and getDistance2D(targetPos, towerPos) > levelConfig.Range)
+			or (targetPos and Helper.getDistance2D(targetPos, towerPos) > levelConfig.Range)
 		then
 			tower.Target = self:GetClosestTarget(towerPos, levelConfig.Range)
 		end
@@ -332,6 +349,9 @@ function TowerSystem:FireTower(tower)
 		end
 	end
 
+	local waveSystem = self.framework.systems["WaveSystem"]
+	if not waveSystem then return end
+
 	local config = tower.Config
 	local levelConfig = config.Levels[tower.Level]
 	local towerPos = tower.Instance:GetPivot().Position
@@ -348,7 +368,7 @@ function TowerSystem:FireTower(tower)
 				local hrp = mob:FindFirstChild("HumanoidRootPart")
 
 				if humanoid and hrp then
-					local dist = getDistance2D(hrp.Position, centerPos)
+					local dist = Helper.getDistance2D(hrp.Position, centerPos)
 					if dist <= radius then
 						humanoid:TakeDamage(levelConfig.Damage)
 
@@ -356,7 +376,7 @@ function TowerSystem:FireTower(tower)
 						local enemyCfg = EnemyConfig[mob.Name]
 						if enemyCfg then
 							local rewardPerDamage = enemyCfg.Reward / enemyCfg.Health
-							WaveSystem:AddCoins(levelConfig.Damage * rewardPerDamage)
+							waveSystem:AddCoins(levelConfig.Damage * rewardPerDamage)
 						end
 						hitCount += 1
 					end
@@ -374,7 +394,7 @@ function TowerSystem:FireTower(tower)
 			local enemyCfg = EnemyConfig[target.Name]
 			if enemyCfg then
 				local rewardPerDamage = enemyCfg.Reward / enemyCfg.Health
-				WaveSystem:AddCoins(levelConfig.Damage * rewardPerDamage)
+				waveSystem:AddCoins(levelConfig.Damage * rewardPerDamage)
 			end
 		end
 	end

@@ -3,20 +3,9 @@ local Fusion = require(RS.Packages.Fusion)
 
 local Scoped = Fusion.scoped
 local Children = Fusion.Children
+local Helper = require(RS.Utils.Helper)
 
 type UsedAs<T> = Fusion.Value<T> | Fusion.Computed<T>
-
-local function formatNumber(n: number)
-	local formatted = tostring(math.floor(tonumber(n) or 0))
-	local k
-	while true do  
-		formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", '%1,%2')
-		if k == 0 then
-			break
-		end
-	end
-	return formatted
-end
 
 return function(props: {
 	Coins: UsedAs<number>,
@@ -28,7 +17,7 @@ return function(props: {
 	})
 
 	local coinText = scope:Computed(function(use)
-		return "🟡 " .. formatNumber(use(props.Coins))
+		return "🟡 " .. Helper.formatNumber(use(props.Coins))
 	end)
 
 	local component = scope:New("TextLabel")({

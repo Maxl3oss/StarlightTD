@@ -229,14 +229,12 @@ function HealthBarSystem:UpdateBillboardHP(billboard: BillboardGui, health: numb
 	end
 
 	local popScale = UDim2.new(originalScale.X.Scale + 0.1, 0, originalScale.Y.Scale + 0.1, 0)
-
-	local pop = TweenService:Create(background, TweenInfo.new(0.08), { Size = popScale })
-	local back = TweenService:Create(background, TweenInfo.new(0.08), { Size = originalScale })
-
+	
+	-- ใช้ Reverses = true เพื่อให้มันหดกลับเองโดยไม่ต้องรอ Completed (ประหยัด CPU)
+	local pop = TweenService:Create(background, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, 0, true), { 
+		Size = popScale 
+	})
 	pop:Play()
-	pop.Completed:Connect(function()
-		back:Play()
-	end)
 end
 
 return HealthBarSystem

@@ -88,6 +88,14 @@ function WaveClientSystem:Init()
 		end,
 		Parent = mainUI,
 	})
+
+	-- Pre-warm UI components to prevent hitching on first update
+	task.defer(function()
+		self.coinsState:set(Fusion.peek(self.coinsState))
+		self.healthState:set(Fusion.peek(self.healthState))
+	end)
+
+	-- warn("[WaveClientSystem] UI Initialized and Pre-warmed")
 end
 
 return WaveClientSystem

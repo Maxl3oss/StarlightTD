@@ -27,8 +27,6 @@ function TowerUISystem:Init(framework)
 end
 
 function TowerUISystem:Start()
-	warn("[TowerUISystem] Starting UI system...")
-
 	-- Main UI Frame
 	local screenGui = Instance.new("ScreenGui")
 	screenGui.Name = "TowerUI"
@@ -87,7 +85,7 @@ function TowerUISystem:Start()
 			self.scope:Computed(function(use)
 				local towerName = use(self.selectedTower)
 				local isPlacing = use(self.isPlacingUI)
-				
+
 				if not towerName or not isPlacing then
 					return
 				end
@@ -106,7 +104,7 @@ function TowerUISystem:Start()
 		[Fusion.Children] = {
 			self.scope:Computed(function(use)
 				local tower = use(self.inspectingTower)
-				
+
 				-- อาวุธลับ: ทำลาย Scope เก่าทิ้งทุกครั้งที่เปลี่ยนการเลือก
 				if self.infoScope then
 					Fusion.doCleanup(self.infoScope)
@@ -177,12 +175,15 @@ function TowerUISystem:Start()
 
 	-- Handle World UI for Tower Names/Levels
 	local function setupWorldUI(towerInstance: Model)
-		if not towerInstance or not towerInstance:IsA("Model") then return end
-		
+		if not towerInstance or not towerInstance:IsA("Model") then
+			return
+		end
+
 		-- ป้องกันการสร้างซ้ำถ้ามีอยู่แล้ว
-		if towerInstance:FindFirstChild("WorldTowerInfo") then return end
-		
-		warn("[TowerUISystem] Setting up World UI for:", towerInstance.Name)
+		if towerInstance:FindFirstChild("WorldTowerInfo") then
+			return
+		end
+
 		WorldTowerInfo(self.scope, {
 			Tower = towerInstance,
 		})
@@ -217,8 +218,6 @@ function TowerUISystem:Start()
 			end
 		end
 	end)
-
-	warn("[TowerUISystem] UI Mounted")
 end
 
 return TowerUISystem

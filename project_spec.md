@@ -101,6 +101,10 @@
 - **Sell Policy:** Tower sales MUST refund exactly 70% of the total investment (Original Cost + all Upgrade Costs). Refund calculations must be performed on the server for security.
 - **Stories Location:** All UI preview stories MUST reside in `src/ServerScriptService/Stories/`.
 - **Spec Maintenance:** The `project_spec.md` MUST be updated every time a new feature, network event, or architectural change is implemented. This document is the single source of truth.
+- **Shared Utilities:** Frequently used functions (e.g., `getDistance2D`, `formatNumber`, `setCollisionGroup`) MUST be placed in `src/ReplicatedStorage/Utils/Helper.luau`. Developers MUST check this helper before rewriting utility logic.
+- **Network Optimization:** Economy updates (like adding coins) MUST be throttled using `task.defer` to batch multiple changes into a single network packet per frame. NEVER fire network events inside tight loops (e.g., AoE damage loops).
+- **UI Performance:** All major Fusion UI systems MUST implement "Pre-warming" during initialization to prevent hitching. Always use the modern Fusion 0.3 API: use `peek()` or `use()` instead of the deprecated `get()`.
+- **VFX Standards:** Frequent visual effects (like health bar pops) MUST use optimized tweens (e.g., `Reverses = true`) instead of chain-connecting multiple tweens to minimize event listener overhead.
 - **Logic Security:** Gameplay-critical combat logic (Damage, Range, FireRate) MUST be stored in `src/ServerScriptService/TowerLogic/` and handled exclusively on the server.
 - **Asset Replication:** Server logic should be stripped from models in `ReplicatedStorage` to prevent client-side script inspection.
 
@@ -120,6 +124,7 @@
 - [x] Security (Logic Stripping & Centralized TowerLogic)
 - [x] Notification UI System
 - [x] Core Gameplay (Waves/Placement/Combat)
-- [ ] Upgrade UI (Allowing players to level up towers)
+- [x] Upgrade & Sell UI (Allowing players to manage towers)
+- [x] Unique Tower Identification (UUID-based networking)
 - [ ] Sound Design
 - [ ] Progression Systems (Persistent Inventory)
