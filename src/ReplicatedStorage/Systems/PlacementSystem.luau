@@ -17,7 +17,18 @@ local RAY_DISTANCE = 500
 
 function PlacementSystem:Init()
 	self.player = Players.LocalPlayer
+	self.userInput = UserInputService
 	self.mouse = self.player:GetMouse()
+
+	-- Selection Highlight (Aura Style)
+	self.selectionBox = Instance.new("Highlight")
+	self.selectionBox.Name = "TowerHighlight"
+	self.selectionBox.FillColor = Color3.fromRGB(100, 100, 255)
+	self.selectionBox.FillTransparency = 0.8
+	self.selectionBox.OutlineColor = Color3.fromRGB(255, 255, 255)
+	self.selectionBox.OutlineTransparency = 0
+	self.selectionBox.Parent = self.player:WaitForChild("PlayerGui")
+
 	self.isPlacing = false
 	self.currentTowerName = nil
 	self.ghostModel = nil
@@ -112,21 +123,28 @@ function PlacementSystem:HandleSelection()
 	raycastParams.FilterDescendantsInstances = { towersFolder }
 
 	local result = Workspace:Raycast(mouseRay.Origin, mouseRay.Direction * RAY_DISTANCE, raycastParams)
+
 	if result then
 		local model = result.Instance:FindFirstAncestorOfClass("Model")
-		local config = model and TowerConfig[model.Name]
-		if model and config then
+		-- Ensure the model is actually a tower (in Workspace.Towers)
+		if model and model.Parent == Workspace:FindFirstChild("Towers") then
 			self.selectedTower = model
-			self:ShowRange(model:GetPivot().Position, config.Levels[1].Range)
+			self.selectionBox.Adornee = model
+			local config = TowerConfig[model.Name]
+			if config then
+				self:ShowRange(model:GetPivot().Position, config.Levels[1].Range)
+			end
 			return
 		end
 	end
 
+	-- Deselect if click on nothing/ground
 	self:Deselect()
 end
 
 function PlacementSystem:Deselect()
 	self.selectedTower = nil
+	self.selectionBox.Adornee = nil
 	self:HideRange()
 end
 

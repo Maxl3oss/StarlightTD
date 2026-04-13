@@ -21,7 +21,7 @@ function NotificationUISystem:Start()
 	screenGui.Parent = self.playerGui
 
 	Network.Notify:OnEvent(function(data)
-		local component = Notification.New(self.scope, {
+		local component = Notification(self.scope, {
 			Message = data.Message,
 			Type = data.Type,
 		})

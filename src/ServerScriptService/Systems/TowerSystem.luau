@@ -11,7 +11,6 @@ local Workspace = game:GetService("Workspace")
 local TowerConfig = require(RS.Configs.TowerConfig)
 local EnemyConfig = require(SS.Configs.EnemyConfig)
 local Network = require(RS.Network)
-local WaveSystem = require(SS.Systems.WaveSystem)
 local GameConfig = require(SS.Configs.GameConfig)
 
 -- Constants
@@ -25,7 +24,8 @@ local function print(msg: string)
 	end
 end
 
-function TowerSystem:Init()
+function TowerSystem:Init(framework)
+	self.framework = framework
 	self.towers = {}
 	self.towersFolder = Workspace:FindFirstChild("Towers") or Instance.new("Folder")
 	self.towersFolder.Name = "Towers"
@@ -34,6 +34,58 @@ function TowerSystem:Init()
 	-- Listen for placement requests
 	Network.PlaceTower:OnEvent(function(player, data)
 		self:HandlePlaceTower(player, data.TowerName, data.Position)
+	end)
+
+	-- Upgrade Request
+	Network.RequestUpgrade:OnEvent(function(requestingPlayer, data)
+		local waveSystem = self.framework.systems["WaveSystem"]
+		if not waveSystem then
+			return
+		end
+
+		local towerInstance = data.TowerInstance
+		local foundTower = nil
+		for _, t in ipairs(self.towers) do
+			if t.Instance == towerInstance then
+				foundTower = t
+				break
+			end
+		end
+
+		if not foundTower then
+			return
+		end
+
+		local config = foundTower.Config
+		local currentLevel = foundTower.Level
+		local nextLevel = currentLevel + 1
+
+		if nextLevel > 5 then
+			Network.Notify:FireClient(requestingPlayer, { Message = "Already at max level!", Type = "Error" })
+			return
+		end
+
+		local levelConfig = config.Levels[currentLevel]
+		local upgradeCost = levelConfig.UpgradeCost
+
+		if waveSystem.coins < upgradeCost then
+			Network.Notify:FireClient(
+				requestingPlayer,
+				{ Message = `Not enough coins! (Need {upgradeCost})`, Type = "Error" }
+			)
+			return
+		end
+
+		-- Deduct coins and Level up
+		waveSystem:AddCoins(-upgradeCost)
+		foundTower.Level = nextLevel
+		foundTower.Instance:SetAttribute("Level", nextLevel)
+		print(`[TowerSystem] Upgraded {config.Name} to Level {nextLevel} for Player {requestingPlayer.Name}`)
+
+		Network.Notify:FireClient(
+			requestingPlayer,
+			{ Message = `{config.Name} upgraded to Level {nextLevel}!`, Type = "Success" }
+		)
 	end)
 end
 
@@ -79,9 +131,14 @@ function TowerSystem:HandlePlaceTower(player: Player, towerName: string, positio
 	end
 
 	-- Check coins
-	if WaveSystem.coins < config.Cost then
+	local waveSystem = self.framework.systems["WaveSystem"]
+	if not waveSystem then
+		return
+	end
+
+	if waveSystem.coins < config.Cost then
 		Network.Notify:FireClient(player, {
-			Message = "Not enough coins!",
+			Message = `Not enough coins! (Need {config.Cost})`,
 			Type = "Error",
 		})
 		print("Not enough coins to place " .. towerName)
@@ -151,9 +208,12 @@ function TowerSystem:HandlePlaceTower(player: Player, towerName: string, positio
 	towerModel.Parent = self.towersFolder
 
 	-- Deduct coins
-	WaveSystem:AddCoins(-config.Cost)
+	waveSystem:AddCoins(-config.Cost)
 
 	-- Add to active towers
+	-- Set initial level attribute
+	towerModel:SetAttribute("Level", 1)
+
 	local towerData = {
 		Instance = towerModel,
 		Config = config,
@@ -237,7 +297,8 @@ function TowerSystem:FireTower(tower)
 	if logicModule and logicModule:IsA("ModuleScript") then
 		local success, Logic = pcall(require, logicModule)
 		if success and Logic.Fire then
-			Logic.Fire(tower, target, WaveSystem)
+			local waveSystem = self.framework.systems["WaveSystem"]
+			Logic.Fire(tower, target, waveSystem)
 			return
 		end
 	end

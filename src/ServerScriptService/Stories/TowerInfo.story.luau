@@ -1,10 +1,10 @@
 local RS = game:GetService("ReplicatedStorage")
 local Fusion = require(RS.Packages.Fusion)
-local Notification = require(RS.Components.Notification)
+local TowerInfo = require(RS.Components.TowerInfo)
 
 local controls = {
-	Message = "Example Notification Message",
-	Type = "Info", -- Example types: "Info", "Error", "Success"
+	TowerName = "Potato",
+	Level = 1,
 }
 
 type Props = { target: Instance, controls: typeof(controls) }
@@ -15,12 +15,20 @@ local story = {
 	story = function(props: Props)
 		local scope = Fusion.scoped(Fusion)
 		
-		-- Create and parent the notification
-		local component = Notification(scope, {
-			Message = props.controls.Message,
-			Type = props.controls.Type,
+		local component = TowerInfo(scope, {
+			TowerName = props.controls.TowerName,
+			Level = props.controls.Level,
+			OnUpgrade = function()
+				print("Upgrade requested in story!")
+			end,
+			OnClose = function()
+				print("Close requested in story!")
+			end,
 		})
-		component.Parent = props.target
+		
+		if component then
+			component.Parent = props.target
+		end
 
 		return function()
 			scope:doCleanup()

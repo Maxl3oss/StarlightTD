@@ -82,6 +82,28 @@
 
 ---
 
+## 🛠 Development Rules & Standards (MANDATORY)
+
+### 1. UI Framework (Fusion v0.3)
+- **Scoped Syntax:** All components and stories MUST use the `scope` object. Constructor functions like `New`, `Value`, `Computed`, and `Observer` must be called through `scope` (e.g., `scope:New`).
+- **Reactivity:** UI elements must be reactive. Use `scope:Computed` to handle derived states and `scope:Value/Observer` to listen for attribute changes on game objects (like `Level`).
+- **Type Safety:** All component functions MUST have a strictly defined `props` type. Do not use generic types like `any` or leave them undefined.
+
+### 2. Visual Standards
+- **Tower Selection:** Always use the `Highlight` instance (Aura/Outline style) when a tower is selected. Avoid using `SelectionBox` (wireframe) for primary selection visuals.
+- **Micro-Animations:** UI components (like Notifications) should include smooth transitions (Fade, Slide) using task-based loops or Fusion's spring/tween systems when available.
+
+### 3. Workflow & Organization
+- **Stories Location:** All UI preview stories MUST reside in `src/ServerScriptService/Stories/`.
+- **Logic Security:** Gameplay-critical combat logic (Damage, Range, FireRate) MUST be stored in `src/ServerScriptService/TowerLogic/` and handled exclusively on the server.
+- **Asset Replication:** Server logic should be stripped from models in `ReplicatedStorage` to prevent client-side script inspection.
+
+### 4. Networking
+- **NetRay API:** Use colon syntax for event/request methods (e.g., `Network.Event:OnEvent()`, `Network.Event:FireServer()`).
+- **Authorization:** Server must validate all client requests (Placement, Upgrades, Spending) against current player state and configs.
+
+---
+
 ## Project Status
 - [x] Foundation (Framework/Network)
 - [x] Placement Validation (On Land only)

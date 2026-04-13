@@ -112,4 +112,9 @@ return {
 			Type = NetType.String, -- "Info", "Error", "Success"
 		},
 	}),
+	RequestUpgrade = getOrRegisterEvent("RequestUpgrade", {
+		typeDefinition = {
+			TowerInstance = NetType.Instance,
+		},
+	}),
 }

@@ -66,7 +66,8 @@ end
 
 -- ========== Framework Lifecycle ==========
 
-function WaveSystem:Init()
+function WaveSystem:Init(framework)
+	self.framework = framework
 	-- Cache folder references once
 	self.waypointsFolder = Base:FindFirstChild("Waypoints") or Base:WaitForChild("Waypoints", 5)
 

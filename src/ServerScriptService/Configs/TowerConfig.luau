@@ -34,7 +34,7 @@ return {
 		Name = "Mage",
 		Cost = 400,
 		Levels = {
-			[1] = { Damage = 60, Range = 25, FireRate = 2.5, UpgradeCost = 0 },
+			[1] = { Damage = 60, Range = 30, FireRate = 1.2, UpgradeCost = 300 },
 			[2] = { Damage = 100, Range = 27, FireRate = 2.3, UpgradeCost = 500 },
 			[3] = { Damage = 160, Range = 30, FireRate = 2.1, UpgradeCost = 1000 },
 			[4] = { Damage = 280, Range = 35, FireRate = 1.8, UpgradeCost = 2000 },

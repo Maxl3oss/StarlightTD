@@ -3,7 +3,7 @@ return {
 		Name = "Potato",
 		Cost = 100,
 		Levels = {
-			[1] = { Damage = 10, Range = 12, FireRate = 0.8, UpgradeCost = 0 },
+			[1] = { Damage = 10, Range = 12, FireRate = 0.8, UpgradeCost = 150 },
 			[2] = { Damage = 15, Range = 13, FireRate = 0.75, UpgradeCost = 150 },
 			[3] = { Damage = 22, Range = 14, FireRate = 0.7, UpgradeCost = 250 },
 			[4] = { Damage = 35, Range = 15, FireRate = 0.65, UpgradeCost = 450 },
@@ -19,11 +19,11 @@ return {
 		Name = "Archer",
 		Cost = 150,
 		Levels = {
-			[1] = { Damage = 25, Range = 40, FireRate = 1.0, UpgradeCost = 0 },
+			[1] = { Damage = 25, Range = 40, FireRate = 1.0, UpgradeCost = 200 },
 			[2] = { Damage = 40, Range = 42, FireRate = 0.9, UpgradeCost = 200 },
 			[3] = { Damage = 65, Range = 45, FireRate = 0.8, UpgradeCost = 350 },
 			[4] = { Damage = 100, Range = 50, FireRate = 0.7, UpgradeCost = 600 },
-			[5] = { Damage = 160, Range = 60, FireRate = 0.5, UpgradeCost = 1200 },
+			[5] = { Damage = 160, Range = 60, FireRate = 0.6, UpgradeCost = 1000 },
 		},
 		ProjectileSpeed = 150,
 		AttackType = "Single",
@@ -34,7 +34,7 @@ return {
 		Name = "Mage",
 		Cost = 400,
 		Levels = {
-			[1] = { Damage = 60, Range = 25, FireRate = 2.5, UpgradeCost = 0 },
+			[1] = { Damage = 60, Range = 30, FireRate = 1.2, UpgradeCost = 300 },
 			[2] = { Damage = 100, Range = 27, FireRate = 2.3, UpgradeCost = 500 },
 			[3] = { Damage = 160, Range = 30, FireRate = 2.1, UpgradeCost = 1000 },
 			[4] = { Damage = 280, Range = 35, FireRate = 1.8, UpgradeCost = 2000 },
