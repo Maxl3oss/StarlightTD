@@ -1,25 +1,35 @@
+print("[VfxSystem] Script Loading...")
 local VfxSystem = {}
-VfxSystem.__index = VfxSystem
 
 local RS = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local Network = require(RS.Network)
 local TowerConfig = require(RS.Configs.TowerConfig)
 local TweenService = game:GetService("TweenService")
+local Helper = require(RS.Utils.Helper)
 
 function VfxSystem:Init() end
 
 function VfxSystem:Start()
+	warn("[VfxSystem] System Started and Listening for TowerShoot")
 	Network.TowerShoot:OnEvent(
-		function(data: { From: Vector3, To: Vector3, TowerName: string, TowerInstance: Instance })
+		function(data: { From: Vector3, To: Vector3, TowerName: string, TowerInstance: Instance, Radius: number? })
+			warn("[VfxSystem] Received Event:", data.TowerName)
 			local config = TowerConfig[data.TowerName]
+
 			if not config then
+				warn("[VfxSystem] ERROR: No config found for tower:", data.TowerName)
 				return
 			end
 
+			warn("[VfxSystem] Processing VFX Style:", config.VfxStyle)
+			
+			-- รัศมีการแสดงผล (ลำดับความสำคัญ: รัศมีที่ส่งมาจาก Server > รัศมีในคอนฟิก > ค่าเริ่มต้น)
+			local visualRadius = data.Radius or config.BlastRadius or 12
+
 			-- Detect muzzle for accurate start
 			local startPos = data.From
-			if data.TowerInstance then
+			if data.TowerInstance and data.TowerInstance.Parent then
 				local muzzle = data.TowerInstance:FindFirstChild("Muzzle", true)
 					or data.TowerInstance:FindFirstChild("Head", true)
 				if muzzle then
@@ -29,14 +39,14 @@ function VfxSystem:Start()
 
 			local style = config.VfxStyle
 			if style == "MeleePulse" then
-				self:CreateMeleePulse(data.To, config.BlastRadius or 12)
-				if data.TowerInstance and data.TowerName == "Potato" then
+				self:CreateMeleePulse(data.To, visualRadius)
+				if data.TowerInstance and data.TowerInstance.Parent and data.TowerName == "Potato" then
 					self:AnimatePotato(data.TowerInstance, config.FireRate or 0.8)
 				end
 			elseif style == "Arrow" then
 				self:CreateArrow(startPos, data.To)
 			elseif style == "Meteor" then
-				self:CreateMeteor(data.To, config.BlastRadius or 15)
+				self:CreateMeteor(data.To, visualRadius)
 			else
 				-- Fallback
 				self:CreateLaser(startPos, data.To)
@@ -118,28 +128,38 @@ end
 local Debris = game:GetService("Debris")
 
 function VfxSystem:CreateMeleePulse(position: Vector3, radius: number)
-	-- Shockwave Disc (Faint & Ghostly)
+	-- ยิง Raycast ลงพื้นเพื่อหาตำแหน่งวางลูกบอลให้พอดีผิว
+	local rayParams = RaycastParams.new()
+	rayParams.FilterType = Enum.RaycastFilterType.Exclude
+	local rayResult = Workspace:Raycast(position + Vector3.new(0, 10, 0), Vector3.new(0, -20, 0), rayParams)
+	local finalPos = if rayResult then rayResult.Position else position
+	
+	local diameter = Helper.getDiameter(radius)
+	
+	-- Energy Dome (Sphere)
 	local part = Instance.new("Part")
-	part.Size = Vector3.new(0.05, radius * 1.5, radius * 1.5)
-	part.Shape = Enum.PartType.Cylinder
+	part.Size = Vector3.new(1, 1, 1) -- เริ่มจากจุดเล็กๆ
+	part.Shape = Enum.PartType.Ball
 	part.Anchored = true
 	part.CanCollide = false
-	part.Position = position
-	part.CFrame = CFrame.new(part.Position) * CFrame.Angles(0, 0, math.rad(90))
+	part.Position = finalPos
+	part.CastShadow = false
 
-	part.Color = Color3.fromRGB(255, 0, 0)
-	part.Material = Enum.Material.Neon
-	part.Transparency = 0.7 -- Fainter visibility
+	part.Color = Color3.fromRGB(255, 170, 0) -- สีส้มทอง
+	part.Material = Enum.Material.ForceField -- ใช้ ForceField เพื่อให้ดูไฮเทคและโปร่งแสง
+	part.Transparency = 0.5
 	part.Parent = Workspace
 
 	-- Safe cleanup
-	Debris:AddItem(part, 0.4)
+	Debris:AddItem(part, 0.8)
 
-	local tween = TweenService:Create(part, TweenInfo.new(0.2, Enum.EasingStyle.QuartOut), {
-		Size = Vector3.new(0.05, radius * 2.8, radius * 2.8),
+	-- Tween ขยายโดมพลังงานให้ครอบคลุมพื้นที่
+	local growTween = TweenService:Create(part, TweenInfo.new(0.4, Enum.EasingStyle.QuartOut), {
+		Size = Vector3.new(diameter, diameter, diameter),
 		Transparency = 1,
 	})
-	tween:Play()
+	
+	growTween:Play()
 end
 
 function VfxSystem:AnimatePotato(model: Instance, fireRate: number)

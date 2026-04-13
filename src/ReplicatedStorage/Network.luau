@@ -104,6 +104,7 @@ return {
 			To = NetType.Vector3,
 			TowerName = NetType.String,
 			TowerInstance = NetType.Instance,
+			Radius = NetType.Number, -- เปลี่ยนเป็น Number ปกติ
 		},
 	}),
 	Notify = getOrRegisterEvent("Notify", {

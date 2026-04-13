@@ -42,10 +42,11 @@ function Logic.Fire(tower, target, waveSystem)
 
 		-- Visuals (Only show if hit something)
 		Network.TowerShoot:FireAllClients({
-			From = towerPos + Vector3.new(0, 3, 0),
-			To = towerPos - Vector3.new(0, 2.5, 0),
+			From = Helper.getTowerCenter(tower.Instance),
+			To = Helper.getTowerBase(tower.Instance),
 			TowerName = config.Name,
 			TowerInstance = tower.Instance,
+			Radius = radius,
 		})
 	end
 end

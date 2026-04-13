@@ -104,12 +104,12 @@ function TowerSystem:Init(framework)
 			return
 		end
 
-		-- Calculate Refund (70% total investment)
+		-- Calculate Refund (Using Helper)
 		local totalInvested = towerData.Config.Cost
 		for lv = 1, towerData.Level - 1 do
 			totalInvested += towerData.Config.Levels[lv].UpgradeCost
 		end
-		local refundAmount = math.floor(totalInvested * 0.7)
+		local refundAmount = Helper.calculateRefund(totalInvested)
 
 		-- Execute Sell
 		waveSystem:AddCoins(refundAmount)
@@ -401,10 +401,11 @@ function TowerSystem:FireTower(tower)
 
 	-- Visuals
 	Network.TowerShoot:FireAllClients({
-		From = tower.Instance:GetPivot().Position + Vector3.new(0, 3, 0),
+		From = Helper.getTowerCenter(tower.Instance),
 		To = centerPos,
 		TowerName = config.Name,
 		TowerInstance = tower.Instance,
+		Radius = levelConfig.Range, -- ส่งรัศมีจริงไปให้ Client
 	})
 end
 
