@@ -42,11 +42,12 @@
 - **Combat Logic:** 
     - **Levels:** Towers support 5 levels of progression. Stats are fetched from `tower.Config.Levels[tower.Level]`.
     - **Targeting:** 2D distance calculation to find the closest "Mob".
+    - **Crit system:** Supports critical hits based on `CritRate` and `CritMulti` from config.
     - **Centralized Logic:** Combat logic is kept secure in `ServerScriptService/TowerLogic`.
-- **VFX Synchronization:** Broadcasts `TowerShoot` events to all clients for visual rendering.
+- **VFX Synchronization:** Broadcasts `TowerShoot` and `ShowDamage` events to all clients for visual rendering.
 
 ### 4. Client Systems
-- **VFX System:** Listens for `TowerShoot` events to render polished effects.
+- **VFX System:** Listens for `TowerShoot` and `ShowDamage` events to render polished effects and floating damage popups.
 - **Placement System:** Handles client-side validation logic and real-time color feedback.
 - **UI Systems:** `TowerUISystem`, `WaveClientSystem`, `NotificationUISystem`, and `HealthBarSystem` handle the game HUD using Fusion.
 - **Notification System:** Displays real-time alerts (e.g., "Not enough coins", "Max towers reached").
@@ -61,10 +62,11 @@
     Name = string,
     Cost = number,
     Levels = {
-        [1] = { Damage = number, Range = number, FireRate = number, UpgradeCost = number },
+        [1] = { Damage = number, Range = number, FireRate = number, UpgradeCost = number, CritRate = number, CritMulti = number },
         -- ... up to level 5
     },
     AttackType = "Single" | "AoE",
+    DamageType = "Physical" | "Piercing" | "Magic",
     -- Optional fields
     BlastRadius = number,
     AoECenter = "Tower" | "Target",

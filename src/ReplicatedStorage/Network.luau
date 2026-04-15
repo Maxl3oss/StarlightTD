@@ -135,4 +135,12 @@ return {
 			TowerId = NetType.String,
 		},
 	}),
+	ShowDamage = getOrRegisterEvent("ShowDamage", {
+		typeDefinition = {
+			TargetPosition = NetType.Vector3,
+			Damage = NetType.Number,
+			IsCrit = NetType.Boolean,
+			DamageType = NetType.String,
+		},
+	}),
 }

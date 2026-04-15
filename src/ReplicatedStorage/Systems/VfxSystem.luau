@@ -46,6 +46,80 @@ function VfxSystem:Start()
 			self:CreateLaser(startPos, data.To)
 		end
 	end)
+
+	Network.ShowDamage:OnEvent(function(data)
+		self:CreateDamagePopup(data.TargetPosition, data.Damage, data.IsCrit, data.DamageType)
+	end)
+end
+
+-- ========================
+-- DAMAGE POPUP 💥
+-- ========================
+function VfxSystem:CreateDamagePopup(position: Vector3, damage: number, isCrit: boolean, damageType: string)
+	local damageColors = {
+		Physical = Color3.fromRGB(236, 240, 241),
+		Piercing = Color3.fromRGB(241, 196, 15),
+		Magic = Color3.fromRGB(155, 89, 182),
+	}
+
+	local color = damageColors[damageType] or Color3.new(1, 1, 1)
+
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "DamagePopup"
+	billboard.Size = UDim2.fromOffset(100, 50)
+	billboard.Adornee = nil -- We'll set position manually or use a part
+	billboard.AlwaysOnTop = true
+	billboard.MaxDistance = 100
+
+	-- Create a temporary part to hold the billboard
+	local part = Instance.new("Part")
+	part.Size = Vector3.new(1, 1, 1)
+	part.Transparency = 1
+	part.Anchored = true
+	part.CanCollide = false
+	part.Position = position + Vector3.new(math.random(-1, 1), 2, math.random(-1, 1))
+	part.Parent = Workspace
+	billboard.Parent = part
+
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.Text = if isCrit then `⚡{math.floor(damage)}⚡` else math.floor(damage)
+	label.Font = Enum.Font.FredokaOne
+	label.TextColor3 = if isCrit then Color3.fromRGB(231, 76, 60) else color
+	label.TextScaled = true
+	label.Parent = billboard
+
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 2
+	stroke.Color = Color3.new(0, 0, 0)
+	stroke.Parent = label
+
+	-- Pop animation
+	local startScale = if isCrit then 1.5 else 1
+	label.UIScale = if label:FindFirstChild("UIScale") then label.UIScale else Instance.new("UIScale", label)
+	label.UIScale.Scale = 0
+
+	TweenService:Create(label.UIScale, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+		Scale = startScale,
+	}):Play()
+
+	-- Floating + Fade
+	local moveTarget = part.Position + Vector3.new(0, 4, 0)
+	TweenService:Create(part, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		Position = moveTarget,
+	}):Play()
+
+	task.delay(0.5, function()
+		TweenService:Create(label, TweenInfo.new(0.3), {
+			TextTransparency = 1,
+		}):Play()
+		TweenService:Create(stroke, TweenInfo.new(0.3), {
+			Transparency = 1,
+		}):Play()
+	end)
+
+	Debris:AddItem(part, 0.9)
 end
 
 -- ========================

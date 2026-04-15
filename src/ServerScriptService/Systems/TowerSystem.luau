@@ -354,8 +354,33 @@ function TowerSystem:FireTower(tower)
 
 	local config = tower.Config
 	local levelConfig = config.Levels[tower.Level]
+	local damageType = config.DamageType or "Physical"
 	local towerPos = tower.Instance:GetPivot().Position
 	local centerPos = if config.AoECenter == "Tower" then towerPos else target:GetPivot().Position
+
+	local function applyDamage(mob, humanoid, hrp)
+		local isCrit = math.random(1, 100) <= (levelConfig.CritRate or 0)
+		local finalDamage = levelConfig.Damage * (if isCrit then (levelConfig.CritMulti or 2) else 1)
+
+		humanoid:TakeDamage(finalDamage)
+
+		-- Reward logic
+		local enemyCfg = EnemyConfig[mob.Name]
+		if enemyCfg then
+			local rewardPerDamage = enemyCfg.Reward / enemyCfg.Health
+			waveSystem:AddCoins(finalDamage * rewardPerDamage)
+		end
+
+		-- Broadcast Damage Visual
+		Network.ShowDamage:FireAllClients({
+			TargetPosition = hrp.Position,
+			Damage = finalDamage,
+			IsCrit = isCrit,
+			DamageType = damageType,
+		})
+
+		return 1
+	end
 
 	if config.AttackType == "AoE" then
 		-- Area of Effect Damage
@@ -370,37 +395,23 @@ function TowerSystem:FireTower(tower)
 				if humanoid and hrp then
 					local dist = Helper.getDistance2D(hrp.Position, centerPos)
 					if dist <= radius then
-						humanoid:TakeDamage(levelConfig.Damage)
-
-						-- Reward logic
-						local enemyCfg = EnemyConfig[mob.Name]
-						if enemyCfg then
-							local rewardPerDamage = enemyCfg.Reward / enemyCfg.Health
-							waveSystem:AddCoins(levelConfig.Damage * rewardPerDamage)
-						end
-						hitCount += 1
+						hitCount += applyDamage(mob, humanoid, hrp)
 					end
 				end
 			end
 		end
-		print(`[TowerSystem] {config.Name} (Lv {tower.Level}) AoE hit {hitCount} targets (DMG: {levelConfig.Damage})`)
+		print(`[TowerSystem] {config.Name} (Lv {tower.Level}) AoE hit {hitCount} targets (Total DMG: {levelConfig.Damage})`)
 	else
 		-- Single Target Damage
 		local humanoid = target:FindFirstChildOfClass("Humanoid")
-		if humanoid then
-			humanoid:TakeDamage(levelConfig.Damage)
-
-			-- Gradual Reward Logic
-			local enemyCfg = EnemyConfig[target.Name]
-			if enemyCfg then
-				local rewardPerDamage = enemyCfg.Reward / enemyCfg.Health
-				waveSystem:AddCoins(levelConfig.Damage * rewardPerDamage)
-			end
+		local hrp = target:FindFirstChild("HumanoidRootPart")
+		if humanoid and hrp then
+			applyDamage(target, humanoid, hrp)
 		end
 	end
 
 	-- Visuals
-	Network.TowerShoot:FireAllClients({
+	 Network.TowerShoot:FireAllClients({
 		From = Helper.getTowerCenter(tower.Instance),
 		To = centerPos,
 		TowerName = config.Name,

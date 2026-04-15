@@ -10,6 +10,7 @@ local Logic = {}
 function Logic.Fire(tower, target, waveSystem)
 	local config = tower.Config
 	local levelConfig = config.Levels[tower.Level]
+	local damageType = config.DamageType or "Physical"
 	local towerPos = tower.Instance:GetPivot().Position
 	local radius = levelConfig.Range
 	local hitCount = 0
@@ -23,14 +24,26 @@ function Logic.Fire(tower, target, waveSystem)
 			if humanoid and hrp then
 				local dist = Helper.getDistance2D(hrp.Position, towerPos)
 				if dist <= radius then
-					humanoid:TakeDamage(levelConfig.Damage)
+					local isCrit = math.random(1, 100) <= (levelConfig.CritRate or 0)
+					local finalDamage = levelConfig.Damage * (if isCrit then (levelConfig.CritMulti or 2) else 1)
+
+					humanoid:TakeDamage(finalDamage)
 
 					-- Reward logic
 					local enemyCfg = EnemyConfig[mob.Name]
 					if enemyCfg then
 						local rewardPerDamage = enemyCfg.Reward / enemyCfg.Health
-						waveSystem:AddCoins(levelConfig.Damage * rewardPerDamage)
+						waveSystem:AddCoins(finalDamage * rewardPerDamage)
 					end
+
+					-- Broadcast Damage Visual
+					Network.ShowDamage:FireAllClients({
+						TargetPosition = hrp.Position,
+						Damage = finalDamage,
+						IsCrit = isCrit,
+						DamageType = damageType,
+					})
+
 					hitCount += 1
 				end
 			end
